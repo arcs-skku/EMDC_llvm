@@ -1,5 +1,5 @@
 DOCKER_IMAGE=sunginh/emdc-oneapi-base-cuda:v1.0
-ACTION_NAME=sycl_test
+ACTION_NAME=sycl_hw
 ACTION=Action.zip
 
 #rm $ACTION

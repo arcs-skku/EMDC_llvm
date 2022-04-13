@@ -1,11 +1,20 @@
 #! /bin/bash
+apt install jq -y
 chmod +x /action/exec.exe
+
 
 export PATH=/root/llvm/build/bin:$PATH
 export LD_LIBRARY_PATH=/root/llvm/build/lib:$LD_LIBRARY_PATH
-SYCL_DEVICE_FILTER=$(jq -r '(.SYCL_DEVICE_FILTER)') 
-./exec.exe 
+
+
+# parse action param
+SYCL_DEVICE_FILTER=$(jq -r '(.SYCL_DEVICE_FILTER)')
+
+# run exec.exe using specified device, replace the newline to semi colon from STDOUT, write the result as file named out
+SYCL_DEVICE_FILTER=$SYCL_DEVICE_FILTER ./exec.exe | tr -s '\n' ';' > out
+
+echo "{ \"device\" : \"dev=$(echo $SYCL_DEVICE_FILTER) \", \"msg\": \"$(head -n 1 out) \"    }"
 
 #./exec.exe
-#echo "{\"msg\": \"res: $(cat f1)  \" }"
+#echo "{\"msg\": \"res: $(cat f1) $(cat f2) $(printenv PATH)  \" }"
 #echo "{\"msg\": \"res: $(printenv PATH)  \" }"

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+ACTION_NAME=dpcpp_action
+ACTION_SCRIPT=action.zip
+
+#delete existing action
+wsk action delete $ACTION_NAME
+
+#create new action with action script as action name
+wsk action create $ACTION_NAME $ACTION_SCRIPT --docker sunginh/emdc-oneapi-base-cuda:v1.0
+
+#invoke the action and print the result
+wsk action invoke $ACTION_NAME --result
