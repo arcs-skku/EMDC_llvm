@@ -21,6 +21,8 @@ cudaLimit :
 	- cudaMallocHeapSize : default=8MB
 	- cudaLimitDevRuntimeSyncDepth : 1~24
 	- cudaLimitDevRuntimePendingLaunchCount : default=2048
+	- cudaLimitMaxL2FetchGranularity: 0~128
+	- cudaLimitPersistingL2CacheSize
 
 
 
