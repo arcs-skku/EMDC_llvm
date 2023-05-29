@@ -10,3 +10,5 @@ NVIDIA Management Library
     - nvmlDeviceGetIndex(dev_id_nvml, &index); // unsigned int index;
 5. clear
     - nvmlShutdown();
+6. Get device count
+    - nvmlDeviceGetCount(&num_devices);
