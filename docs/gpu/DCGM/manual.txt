@@ -1,0 +1,14 @@
+Create a group
+  $ dcgmi group -c [Group Name]
+
+Remove group
+  $ dcgmi group -d [Group ID]
+
+Add GPU device to group
+  $ dcgmi group -g [Group ID] -a [GPU device number] (ex. 0, 1, …)
+
+Enable stats recording for the target group
+  $ dcgmi stats -g [Group ID] —enable
+
+Check SM occupancy
+  $ sudo dcgmi dmon -g [Group ID] -e 1003            // 1003 is a DCGM Field Name of SM Occupancy
