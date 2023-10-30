@@ -1,0 +1,20 @@
+Stall Reasons
+- Stall Long Scoreboard: Warp was stalled waiting for a scoreboard dependency on a L1TEX (local, global, surface, texture) operation.
+- Stall LG Throttle: Warp was stalled waiting for the L1 instruction queue for local and global (LG) memory operations to be not full.
+- Stall MIO Throttle: Warp was stalled waiting for the MIO (memory input/output) instruction queue to be not full.
+- Stall Wait: Warp was stalled waiting on a fixed latency execution dependency.
+- Stall Not Selected: Warp was stalled waiting for the micro scheduler to select the warp to issue.
+- Stall Barrier: Warp was stalled waiting for sibling warps at a CTA barrier.
+- Stall Selected: Warp was selected by the micro scheduler and issued an instruction.
+- Stall Math Pipe Throttle: Warp was stalled waiting for the execution pipe to be available.
+- Stall Short Scoreboard: Warp was stalled waiting for a scoreboard dependency on a MIO (memory input/output) operation (not to L1TEX).
+- Stall Dispatch Stall: Warp was stalled waiting on a dispatch stall.
+- Stall IMC Miss: Warp was stalled waiting for an immediate constant cache (IMC) miss.
+- Stall No Instruction: Warp was stalled waiting to be selected to fetch an instruction or waiting on an instruction cache miss.
+- Stall Misc: Warp was stalled for a miscellaneous hardware reason.
+- Stall Branch Resolving: Warp was stalled waiting for a branch target to be computed, and the warp program counter to be updated.
+- Stall Drain: Warp was stalled after EXIT waiting for all outstanding memory operations to complete so that warp's resources can be freed.
+- Stall Tex Throttle: Warp was stalled waiting for the L1 instruction queue for texture operations to be not full.
+
+
+https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-reference
