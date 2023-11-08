@@ -1,0 +1,12 @@
+void task_monitoring(cudaEvent_t event){
+  while(1){
+    if(cudaEventQuery(event) == cudaSuccess)
+      break;
+    if(chk_former_task) && (!full){           // chk_former_task: Check for whether former task was terminated, full: Check whether the current task is an extra task
+      cudaStreamCreate(&s_e);
+      cudaMemAdvise(unifiedAddr, extra_mem, setPreferredLocation, device);
+      cudaMemPrefetchAsync(unifiedAddr, extra_mem, 0, s_e);
+      break;
+    }
+  }
+}
