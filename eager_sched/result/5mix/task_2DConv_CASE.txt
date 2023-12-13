@@ -1,0 +1,192 @@
+TID: 1 before schedule, [2023/12/04] 21:06:11 msec : 240
+2353489166612131 bemps_begin: pid 10083 , num_blocks 1048576 , threads_per_block 1024
+2353489166697268 bemps_beacon: pid 10083 , bemps_tid 1 , mem_B 8589934592 , warps 33554432 , thread_blocks 1048576
+TID: 6 before schedule, [2023/12/04] 21:06:18 msec : 752
+2353496678523836 bemps_begin: pid 10209 , num_blocks 1048576 , threads_per_block 1024
+2353496678583197 bemps_beacon: pid 10209 , bemps_tid 6 , mem_B 8589934592 , warps 33554432 , thread_blocks 1048576
+TID: 11 before schedule, [2023/12/04] 21:06:26 msec : 552
+2353504477721367 bemps_begin: pid 10307 , num_blocks 1048576 , threads_per_block 1024
+2353504477779013 bemps_beacon: pid 10307 , bemps_tid 11 , mem_B 8589934592 , warps 33554432 , thread_blocks 1048576
+TID: 16 before schedule, [2023/12/04] 21:06:34 msec : 399
+2353512325039143 bemps_begin: pid 10398 , num_blocks 1048576 , threads_per_block 1024
+2353512325109930 bemps_beacon: pid 10398 , bemps_tid 16 , mem_B 8589934592 , warps 33554432 , thread_blocks 1048576
+TMP: 0
+Device ID: 1
+Finished bemps_begin: 8589934592
+TID: 1 after schedule, [2023/12/04] 21:06:11 msec : 312
+Full: 1
+setting device 0 with name Tesla V100-SXM2-32GB
+Check val: 0.000000
+Orig_beacon_q_idx: 1
+2353515412666273 bemps_free: pid 10083 , freeing device_id 1 , bemps_tid 1
+TID: 1 finish work, [2023/12/04] 21:06:37 msec : 487
+Total Time: 26246214
+Init Time: 6603699
+2353515412807627 _bemps_dump_stats: Dumping bemps stats
+2353515412811577 _bemps_dump_stats: count of beacon times: 1
+2353515412818378 _bemps_dump_stats: min beacon time (ns): 71338358
+2353515412822166 _bemps_dump_stats: max beacon time (ns): 71338358
+2353515412825850 _bemps_dump_stats: avg beacon time (ns): 7.13384e+07
+2353515412846597 _bemps_dump_stats: count of free times: 1
+2353515412850332 _bemps_dump_stats: min free time (ns): 160848
+2353515412854205 _bemps_dump_stats: max free time (ns): 160848
+2353515412857879 _bemps_dump_stats: avg free time (ns): 160848
+TID: 21 before schedule, [2023/12/04] 21:06:41 msec : 860
+2353519786308064 bemps_begin: pid 10493 , num_blocks 1048576 , threads_per_block 1024
+2353519786373813 bemps_beacon: pid 10493 , bemps_tid 21 , mem_B 8589934592 , warps 33554432 , thread_blocks 1048576
+TID: 26 before schedule, [2023/12/04] 21:06:49 msec : 205
+2353527131485725 bemps_begin: pid 10570 , num_blocks 1048576 , threads_per_block 1024
+2353527131550666 bemps_beacon: pid 10570 , bemps_tid 26 , mem_B 8589934592 , warps 33554432 , thread_blocks 1048576
+TID: 31 before schedule, [2023/12/04] 21:06:56 msec : 773
+2353534699514607 bemps_begin: pid 10636 , num_blocks 1048576 , threads_per_block 1024
+2353534699581025 bemps_beacon: pid 10636 , bemps_tid 31 , mem_B 8589934592 , warps 33554432 , thread_blocks 1048576
+TID: 36 before schedule, [2023/12/04] 21:07:04 msec : 241
+2353542166612585 bemps_begin: pid 10696 , num_blocks 1048576 , threads_per_block 1024
+2353542166676266 bemps_beacon: pid 10696 , bemps_tid 36 , mem_B 8589934592 , warps 33554432 , thread_blocks 1048576
+TMP: 0
+Device ID: 0
+Finished bemps_begin: 8589934592
+TID: 6 after schedule, [2023/12/04] 21:06:18 msec : 821
+Full: 1
+setting device 0 with name Tesla V100-SXM2-32GB
+Check val: 0.000000
+Orig_beacon_q_idx: 6
+2353555883483479 bemps_free: pid 10209 , freeing device_id 0 , bemps_tid 6
+TID: 6 finish work, [2023/12/04] 21:07:17 msec : 958
+Total Time: 59205071
+Init Time: 7585644
+2353555883590256 _bemps_dump_stats: Dumping bemps stats
+2353555883594685 _bemps_dump_stats: count of beacon times: 1
+2353555883602777 _bemps_dump_stats: min beacon time (ns): 68393534
+2353555883607209 _bemps_dump_stats: max beacon time (ns): 68393534
+2353555883611668 _bemps_dump_stats: avg beacon time (ns): 6.83935e+07
+2353555883641540 _bemps_dump_stats: count of free times: 1
+2353555883645937 _bemps_dump_stats: min free time (ns): 86368
+2353555883650334 _bemps_dump_stats: max free time (ns): 86368
+2353555883654706 _bemps_dump_stats: avg free time (ns): 86368
+TMP: 0
+Device ID: 3
+Finished bemps_begin: 8589934592
+TID: 11 after schedule, [2023/12/04] 21:06:26 msec : 628
+Full: 1
+setting device 0 with name Tesla V100-SXM2-32GB
+Check val: 0.000000
+Orig_beacon_q_idx: 11
+2353601850359611 bemps_free: pid 10307 , freeing device_id 3 , bemps_tid 11
+TID: 11 finish work, [2023/12/04] 21:08:03 msec : 924
+Total Time: 97372810
+Init Time: 7554960
+2353601850530834 _bemps_dump_stats: Dumping bemps stats
+2353601850535764 _bemps_dump_stats: count of beacon times: 1
+2353601850544344 _bemps_dump_stats: min beacon time (ns): 76348927
+2353601850549169 _bemps_dump_stats: max beacon time (ns): 76348927
+2353601850554177 _bemps_dump_stats: avg beacon time (ns): 7.63489e+07
+2353601850584917 _bemps_dump_stats: count of free times: 1
+2353601850589888 _bemps_dump_stats: min free time (ns): 187498
+2353601850594912 _bemps_dump_stats: max free time (ns): 187498
+2353601850599818 _bemps_dump_stats: avg free time (ns): 187498
+TMP: 0
+Device ID: 1
+Finished bemps_begin: 8589934592
+TID: 16 after schedule, [2023/12/04] 21:06:34 msec : 434
+Full: 1
+setting device 0 with name Tesla V100-SXM2-32GB
+Check val: 0.000000
+Orig_beacon_q_idx: 16
+2353637536075708 bemps_free: pid 10398 , freeing device_id 1 , bemps_tid 16
+TID: 16 finish work, [2023/12/04] 21:08:39 msec : 610
+Total Time: 125211158
+Init Time: 9351398
+2353637536187330 _bemps_dump_stats: Dumping bemps stats
+2353637536192652 _bemps_dump_stats: count of beacon times: 1
+2353637536201110 _bemps_dump_stats: min beacon time (ns): 35238930
+2353637536206546 _bemps_dump_stats: max beacon time (ns): 35238930
+2353637536211979 _bemps_dump_stats: avg beacon time (ns): 3.52389e+07
+2353637536237697 _bemps_dump_stats: count of free times: 1
+2353637536243184 _bemps_dump_stats: min free time (ns): 88445
+2353637536248518 _bemps_dump_stats: max free time (ns): 88445
+2353637536253887 _bemps_dump_stats: avg free time (ns): 88445
+TMP: 0
+Device ID: 0
+Finished bemps_begin: 8589934592
+TID: 21 after schedule, [2023/12/04] 21:07:18 msec : 24
+Full: 1
+setting device 0 with name Tesla V100-SXM2-32GB
+Check val: 0.000000
+Orig_beacon_q_idx: 23
+2353699654853210 bemps_free: pid 10493 , freeing device_id 0 , bemps_tid 21
+TID: 21 finish work, [2023/12/04] 21:09:41 msec : 729
+Total Time: 179868681
+Init Time: 10640104
+2353699654979912 _bemps_dump_stats: Dumping bemps stats
+2353699654984436 _bemps_dump_stats: count of beacon times: 1
+2353699654991449 _bemps_dump_stats: min beacon time (ns): 36163337050
+2353699654995787 _bemps_dump_stats: max beacon time (ns): 36163337050
+2353699655000225 _bemps_dump_stats: avg beacon time (ns): 3.61633e+10
+2353699655024567 _bemps_dump_stats: count of free times: 1
+2353699655028954 _bemps_dump_stats: min free time (ns): 145854
+2353699655033532 _bemps_dump_stats: max free time (ns): 145854
+2353699655037879 _bemps_dump_stats: avg free time (ns): 145854
+TMP: 0
+Device ID: 2
+Finished bemps_begin: 8589934592
+TID: 26 after schedule, [2023/12/04] 21:08:08 msec : 857
+Full: 1
+setting device 0 with name Tesla V100-SXM2-32GB
+Check val: 0.000000
+Orig_beacon_q_idx: 28
+2353760304694817 bemps_free: pid 10570 , freeing device_id 2 , bemps_tid 26
+TID: 26 finish work, [2023/12/04] 21:10:42 msec : 379
+Total Time: 233173350
+Init Time: 10622054
+2353760304831359 _bemps_dump_stats: Dumping bemps stats
+2353760304835859 _bemps_dump_stats: count of beacon times: 1
+2353760304843733 _bemps_dump_stats: min beacon time (ns): 79651289984
+2353760304848152 _bemps_dump_stats: max beacon time (ns): 79651289984
+2353760304852466 _bemps_dump_stats: avg beacon time (ns): 7.96513e+10
+2353760304876001 _bemps_dump_stats: count of free times: 1
+2353760304880926 _bemps_dump_stats: min free time (ns): 90525
+2353760304885437 _bemps_dump_stats: max free time (ns): 90525
+2353760304889786 _bemps_dump_stats: avg free time (ns): 90525
+TMP: 0
+Device ID: 2
+Finished bemps_begin: 8589934592
+TID: 31 after schedule, [2023/12/04] 21:09:41 msec : 815
+Full: 1
+setting device 0 with name Tesla V100-SXM2-32GB
+Check val: 0.000000
+Orig_beacon_q_idx: 33
+2353865253835790 bemps_free: pid 10636 , freeing device_id 2 , bemps_tid 31
+TID: 31 finish work, [2023/12/04] 21:12:27 msec : 328
+Total Time: 330554460
+Init Time: 10648764
+2353865253969743 _bemps_dump_stats: Dumping bemps stats
+2353865253985199 _bemps_dump_stats: count of beacon times: 1
+2353865253992559 _bemps_dump_stats: min beacon time (ns): 165041289880
+2353865253996306 _bemps_dump_stats: max beacon time (ns): 165041289880
+2353865254000015 _bemps_dump_stats: avg beacon time (ns): 1.65041e+11
+2353865254022734 _bemps_dump_stats: count of free times: 1
+2353865254026791 _bemps_dump_stats: min free time (ns): 104584
+2353865254031081 _bemps_dump_stats: max free time (ns): 104584
+2353865254034906 _bemps_dump_stats: avg free time (ns): 104584
+TMP: 0
+Device ID: 0
+Finished bemps_begin: 8589934592
+TID: 36 after schedule, [2023/12/04] 21:11:09 msec : 969
+Full: 1
+setting device 0 with name Tesla V100-SXM2-32GB
+Check val: 0.000000
+Orig_beacon_q_idx: 38
+2353952127553898 bemps_free: pid 10696 , freeing device_id 0 , bemps_tid 36
+TID: 36 finish work, [2023/12/04] 21:13:54 msec : 202
+Total Time: 409961043
+Init Time: 7746245
+2353952127650044 _bemps_dump_stats: Dumping bemps stats
+2353952127654465 _bemps_dump_stats: count of beacon times: 1
+2353952127661601 _bemps_dump_stats: min beacon time (ns): 245728565935
+2353952127665925 _bemps_dump_stats: max beacon time (ns): 245728565935
+2353952127670249 _bemps_dump_stats: avg beacon time (ns): 2.45729e+11
+2353952127695228 _bemps_dump_stats: count of free times: 1
+2353952127699601 _bemps_dump_stats: min free time (ns): 77772
+2353952127703889 _bemps_dump_stats: max free time (ns): 77772
+2353952127708208 _bemps_dump_stats: avg free time (ns): 77772
