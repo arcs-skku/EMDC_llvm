@@ -11,6 +11,20 @@
 //#define BEMPS_SCHED_TIMEOUT_NS 5000000000UL // 5s
 //#define BEMPS_SCHED_TIMEOUT_NS 10000000000UL // 10s
 
+// struct gpu_s {
+//   long mem_B;
+//   unsigned int cores;
+//   unsigned int num_sms;
+//   unsigned int thread_blocks_per_sm;
+//   unsigned int warps_per_sm;
+//   unsigned int total_thread_blocks;
+//   unsigned int total_warps;
+//   bool eager_launch;
+//   int nl_status;
+// };
+
+// struct gpu_s *GPUS;
+
 // The beacon type for an application calling the bemps library.
 typedef struct {
   long mem_B; // Signed. Negatives currently used for frees. Improve later.
@@ -44,6 +58,12 @@ typedef struct {
   bemps_sched_notif_t sched_notif;
   bool extra_status; // for checking kernel end, 1 = extra_task
   size_t extra_mem; // mem which task can achieve
+
+  int nl_test;
+  int g_ID;
+  int ready;
+
+  // int nl_status[4]; // test
 } bemps_shm_comm_t;
 
 // A single type that captures all shared memory pointers between the bemps
@@ -84,6 +104,8 @@ typedef struct {
   // for checking is there an extra task
   bool test_status; // 1 = there is an extra task, 0 = there is no extra task
 
+  // int nl_status[4]; // test
+
   // denote q_idx of extra task
   int extra_task_q_idx;
 } bemps_shm_gen_t;
@@ -108,7 +130,7 @@ void bemps_beacon(int bemps_tid, bemps_beacon_t *bemps_beacon);
 
 extern "C" {
 long bemps_begin(int id, int gx, int gy, int gz, int bx, int by, int bz,
-                 int64_t memsize);
+                 int64_t memsize, int &ret_dev_id);
 }
 
 /*
@@ -159,4 +181,13 @@ long bemps_extra_task_mem(int bemps_tid);
 extern "C" {
 void pre_bemps_free(int bemps_tid, int64_t membytes);
 }
+
+extern "C" {
+void nl_signal(int bemps_tid);
+}
+
+extern "C" {
+void el_wait(int bemps_tid);
+}
+
 #endif
