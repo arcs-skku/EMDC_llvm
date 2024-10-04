@@ -60,7 +60,7 @@
   .total_warps          = 60 * 64   \
 }
 #define V100_SXM2_SPECS {           \
-  .mem_B = 31000L * 1024 * 1024,    \
+  .mem_B = 15500L * 1024 * 1024,    \
   .cores = 5120,                    \
   .num_sms              = 80,       \
   .thread_blocks_per_sm = 32,       \
@@ -90,8 +90,9 @@
 #define GTX_1080_SPECS_MEM_B (8116L * 1024 * 1024)
 //#define V100_SXM2_SPECS_MEM_B (10000L * 1024 * 1024)
 //#define V100_SXM2_SPECS_MEM_B (13000L * 1024 * 1024)
-#define V100_SXM2_SPECS_MEM_B (31000L * 1024 * 1024) // just for convenience, mem_B should be 32000L * ... 
+#define V100_SXM2_SPECS_MEM_B (15500L * 1024 * 1024) // just for convenience, mem_B should be 32000L * ... 
 
+#define MAX_OVERSUB (16400L * 1024 * 1024)
 
 #ifdef BEMPS_SCHED_DEBUG
 #define BEMPS_SCHED_LOG(str)                                          \
@@ -154,6 +155,7 @@ struct gpu_s {
   unsigned int total_thread_blocks;
   unsigned int total_warps;
   bool eager_launch;
+  int nl_status;
 };
 
 struct gpu_in_use_s {
@@ -190,7 +192,7 @@ Profiler p(LIBSTATUS_FILENAME_BASE);
 // single-assignment scheduler
 //
 std::map<pid_t, int> pid_to_device_id;
-std::vector<int> avail_device_ids;
+std::vector<int> avail_device_ids; // vector 말고 size 4 짜리 array로 선언, 1은 사용가능 0은 사용불가능
 
 
 //
@@ -219,6 +221,7 @@ sched_alg_e which_scheduler;
 int max_batch_size;
 
 int NUM_GPUS = 4; // set by init_gpus()
+// int NUM_GPUS = 1; // set by init_gpus()
 
 struct gpu_s *GPUS;
 struct gpu_in_use_s *gpus_in_use;
@@ -280,7 +283,7 @@ static inline void init_gpus(void) {
   cudaDeviceProp prop;
 
   cudaGetDeviceCount(&NUM_GPUS);
-  // NUM_GPUS = 2;
+  NUM_GPUS = 1;
   
   assert(NUM_GPUS > 0 && "Must have at least 1 GPU to use the scheduler\n");
 
@@ -294,7 +297,7 @@ static inline void init_gpus(void) {
     if(strncmp(prop.name, "GeForce GTX 1080", 16) == 0){
         BEMPS_SCHED_LOG("  adjusting mem_B for GTX 1080" << "\n");
         GPUS[i].mem_B = GTX_1080_SPECS_MEM_B;
-    } else if(strncmp(prop.name, "Tesla V100-SXM2-32GB", 20) == 0){
+    } else if(strncmp(prop.name, "Tesla V100-PCIE-16GB", 20) == 0){
         BEMPS_SCHED_LOG("  adjusting mem_B for Tesla V100-SXM2-32GB" << "\n");
         GPUS[i].mem_B = V100_SXM2_SPECS_MEM_B;
     } else {
@@ -309,6 +312,8 @@ static inline void init_gpus(void) {
     GPUS[i].total_warps = prop.multiProcessorCount * WARPS_PER_SM;
 
     GPUS[i].eager_launch = false; // Set there is no eager launch task
+
+    GPUS[i].nl_status = 0;
 
     gpus_in_use[i].sms = new std::vector<std::pair<int, int>>;
   }
@@ -661,6 +666,7 @@ void sched_mgb(void) {
           release_compute(&GPUS[tmp_dev_id], &gpus_in_use[tmp_dev_id], comm);
           gpus_in_use[tmp_dev_id].active_jobs--;
           --*jobs_running_on_gpu;
+          printf("Finished!!!\n");
         } else {
           stats.num_beacons++;
           boomers.push_back(comm);
@@ -727,6 +733,7 @@ void sched_mgb(void) {
         if (allocated) {
           target_dev_id = which_gpu;
           assigned = 1;
+          printf("Assigned!\n");
           break;
         }
         g++;
@@ -1008,6 +1015,14 @@ void sched_mgb_basic(void) {
 
   printf("Test_status: %d\n", bemps_shm_p->gen->test_status);
 
+  for(int q = 0; q < 4; q++){
+    printf("%d\n", GPUS[q].nl_status);
+  }
+
+  int motiv_cnt = 1;
+
+  int job_cnt = 0;
+
   while (1) {
     set_wakeup_time_ns(&ts);
 
@@ -1052,7 +1067,8 @@ void sched_mgb_basic(void) {
         BEMPS_SCHED_LOG("seeing exit flag\n");
         comm->exit_flag = 0;
       } else {
-        assert(comm->beacon.mem_B);
+        // printf("%ld\n", comm->beacon.mem_B);
+        // assert(comm->beacon.mem_B); // test for erase when 2024 08 13
         BEMPS_SCHED_LOG("First loop seeing mem_B: " << comm->beacon.mem_B
                                                     << "\n");
         // printf("CHANGED: %ld\n", comm->beacon.changed);
@@ -1065,14 +1081,21 @@ void sched_mgb_basic(void) {
           long tmp_bytes_to_free = comm->beacon.mem_B;
           long tmp_warps_to_free = comm->beacon.warps;
           
+          // printf("Extra_status: %d\n", comm->extra_status);
+
+          // add for eager launch task is terminated
+    
           // add to get extra memory
-          if(GPUS[tmp_dev_id].eager_launch == 1){
+
+          if((comm->extra_status != 1) && (GPUS[tmp_dev_id].eager_launch == 1)){
             if(el_tasks[tmp_dev_id]->beacon.mem_B - tmp_bytes_to_free >= el_tasks[tmp_dev_id]->beacon.actual_mem_B){
               printf("Fully get mem\n");
               long tmp_extra_free_mem = el_tasks[tmp_dev_id]->beacon.actual_mem_B - el_tasks[tmp_dev_id]->beacon.mem_B + tmp_bytes_to_free;
-              gpus_in_use[tmp_dev_id].mem_B = gpus_in_use[tmp_dev_id].mem_B - el_tasks[tmp_dev_id]->beacon.mem_B + el_tasks[tmp_dev_id]->beacon.actual_mem_B + tmp_bytes_to_free;
+              // gpus_in_use[tmp_dev_id].mem_B = gpus_in_use[tmp_dev_id].mem_B - el_tasks[tmp_dev_id]->beacon.mem_B + el_tasks[tmp_dev_id]->beacon.actual_mem_B + tmp_bytes_to_free;
               el_tasks[tmp_dev_id]->beacon.mem_B = el_tasks[tmp_dev_id]->beacon.actual_mem_B;
+              el_tasks[tmp_dev_id]->ready = 1;
               GPUS[tmp_dev_id].eager_launch = 0;
+              el_tasks[tmp_dev_id]->extra_status = 0;
               tmp_bytes_to_free = tmp_extra_free_mem;
             }
             else{
@@ -1081,6 +1104,12 @@ void sched_mgb_basic(void) {
               tmp_bytes_to_free = 0;
             }
           }
+
+          if(comm->extra_status == 1){
+           GPUS[tmp_dev_id].eager_launch = 0;
+           comm->extra_status = 0; 
+          }
+
           //
 
           BEMPS_SCHED_LOG("Freeing " << tmp_bytes_to_free << " bytes "
@@ -1090,7 +1119,22 @@ void sched_mgb_basic(void) {
           gpus_in_use[tmp_dev_id].mem_B += tmp_bytes_to_free;
           gpus_in_use[tmp_dev_id].warps += tmp_warps_to_free;
           --*jobs_running_on_gpu;
+          
+          struct timespec specific_time;
+          struct tm *now;
+          int millsec;
+          clock_gettime( CLOCK_REALTIME, &specific_time);
+          now = localtime(&specific_time.tv_sec);
+          millsec = specific_time.tv_nsec;
 
+          millsec = floor (specific_time.tv_nsec/1.0e6);
+
+
+          printf("Free Mem: %ld, When Free: [%04d/%02d/%02d] %02d:%02d:%02d msec : %d\n", -tmp_bytes_to_free, 1900 + now->tm_year, 
+              now->tm_mon + 1, now->tm_mday, now->tm_hour, 
+              now->tm_min, now->tm_sec, millsec);
+
+          printf("gpus_in_use[%d].mem_B : %ld\n", tmp_dev_id, gpus_in_use[tmp_dev_id].mem_B);
           printf("Helllllllllllllllllllllllllllllllllllo\n");
         }
         else if(comm->beacon.changed == 1) { // eager freed
@@ -1102,9 +1146,19 @@ void sched_mgb_basic(void) {
           BEMPS_SCHED_LOG("pre_bemps_free() is called. Adjusting the free memory of the device\n");
           // long tmp_bytes_to_free = comm->beacon.mem_B;
           // gpus_in_use[tmp_dev_id].mem_B -= (long) 10082912000;
-          for (int cyc = 0; cyc <10; cyc ++) {
-            printf("--------------PRE---FREE--------------\n");
-          }
+          struct timespec specific_time;
+          struct tm *now;
+          int millsec;
+          clock_gettime( CLOCK_REALTIME, &specific_time);
+          now = localtime(&specific_time.tv_sec);
+          millsec = specific_time.tv_nsec;
+
+          millsec = floor (specific_time.tv_nsec/1.0e6);
+
+
+          printf("Eager Free Mem: %ld, When Eager Free: [%04d/%02d/%02d] %02d:%02d:%02d msec : %d\n", tmp_eager_free_mem, 1900 + now->tm_year, 
+              now->tm_mon + 1, now->tm_mday, now->tm_hour, 
+              now->tm_min, now->tm_sec, millsec);
 
           // printf("eager free: %ld\n", comm->beacon.mem_B);
           // printf("Dev: %d\n", tmp_dev_id);
@@ -1115,9 +1169,11 @@ void sched_mgb_basic(void) {
             if(el_tasks[tmp_dev_id]->beacon.mem_B + tmp_eager_free_mem >= el_tasks[tmp_dev_id]->beacon.actual_mem_B){
               printf("Fully get mem by Eager Free\n");
               long tmp_extra_free_mem = tmp_eager_free_mem - el_tasks[tmp_dev_id]->beacon.actual_mem_B + el_tasks[tmp_dev_id]->beacon.mem_B;
-              gpus_in_use[tmp_dev_id].mem_B = gpus_in_use[tmp_dev_id].mem_B - el_tasks[tmp_dev_id]->beacon.mem_B + el_tasks[tmp_dev_id]->beacon.actual_mem_B - tmp_eager_free_mem;
+              // gpus_in_use[tmp_dev_id].mem_B = gpus_in_use[tmp_dev_id].mem_B - el_tasks[tmp_dev_id]->beacon.mem_B + el_tasks[tmp_dev_id]->beacon.actual_mem_B - tmp_eager_free_mem;
               el_tasks[tmp_dev_id]->beacon.mem_B = el_tasks[tmp_dev_id]->beacon.actual_mem_B;
+              el_tasks[tmp_dev_id]->ready = 1;
               GPUS[tmp_dev_id].eager_launch = 0;
+              el_tasks[tmp_dev_id]->extra_status = 0;
               tmp_eager_free_mem = tmp_extra_free_mem;
             }
             else{
@@ -1131,10 +1187,29 @@ void sched_mgb_basic(void) {
           gpus_in_use[tmp_dev_id].mem_B -= tmp_eager_free_mem;
           printf("gpus_in_use[%d].mem_B : %ld\n", tmp_dev_id, gpus_in_use[tmp_dev_id].mem_B);
         }
+        else if(comm->nl_test == 1){
+          // printf("Let's go\n");
+          if(GPUS[comm->g_ID].nl_status > 0){
+            GPUS[comm->g_ID].nl_status--;
+            printf("GPU : %d, Eager Launch %d\n", comm->g_ID, GPUS[comm->g_ID].eager_launch);
+            printf("GPU : %d, number of remaining NL task %d\n", comm->g_ID, GPUS[comm->g_ID].nl_status);
+            if((GPUS[comm->g_ID].eager_launch == 1) && (GPUS[comm->g_ID].nl_status == 0)){
+              el_tasks[comm->g_ID]->ready = 1;
+              printf("Now El Task can be launched\n");
+            }
+          }
+          else{
+            if((GPUS[comm->g_ID].eager_launch == 1)){
+              el_tasks[comm->g_ID]->ready = 1;
+              printf("Now El Task can be launched\n");
+            }
+          }
+        }
         else { // task를 스케줄 해야되는 상태 (아직 디바이스 여유 메모리와 비교하기 전)
           stats.num_beacons++;
           boomers.push_back(comm);
           batch_size++; // batch size doesn't include free() beacons
+          job_cnt++;
           ++*jobs_waiting_on_gpu;
         }
       }
@@ -1146,92 +1221,308 @@ void sched_mgb_basic(void) {
       stats.max_observed_batch_size = batch_size;
     }
 
-    // Second loop: Walk the boomers. This time handle regular beacons, and
-    // attempt to assign them to a device. The boomers are sorted by memory
-    // footprint, highest to lowest.
+    // 여기서 job 다 들어올때까지 sync
 
-    // boomers.sort(mem_footprint_compare);
-    boomers_len = boomers.size();
-    if (boomers_len > stats.max_len_boomers) {
-      stats.max_len_boomers = boomers_len;
-    }
-    if (boomers_len > 0) {
-      BEMPS_SCHED_LOG("boomers_len: " << boomers_len << "\n");
-    }
-    for (i = 0; i < boomers_len; i++) {
-      assigned = 0;
-      comm = boomers.front();
+    if(job_cnt == 2){
+    // if(1){
+      // Second loop: Walk the boomers. This time handle regular beacons, and
+      // attempt to assign them to a device. The boomers are sorted by memory
+      // footprint, highest to lowest.
 
-      if (comm->age > stats.max_age) {
-        stats.max_age = comm->age;
+      // boomers.sort(mem_footprint_compare);
+      boomers_len = boomers.size();
+      if (boomers_len > stats.max_len_boomers) {
+        stats.max_len_boomers = boomers_len;
       }
+      if (boomers_len > 0) {
+        BEMPS_SCHED_LOG("boomers_len: " << boomers_len << "\n");
+      }
+      for (i = 0; i < boomers_len; i++) {
+        assigned = 0;
+        comm = boomers.front();
+        // boomers.pop_front(); ///////////////
 
-      // The target device for a process must have memory available for it,
-      // and it should be the device with the least warps currently in use.
-      long curr_min_warps = LONG_MAX;
-      int target_dev_id = 0;
-      for (tmp_dev_id = 0; tmp_dev_id < NUM_GPUS; tmp_dev_id++) {
-        BEMPS_SCHED_LOG("Checking device " << tmp_dev_id << "\n"
-                        << "  Total avail bytes: " << GPUS[tmp_dev_id].mem_B << "\n"
-                        << "  In-use bytes: " << gpus_in_use[tmp_dev_id].mem_B << "\n"
-                        << "  Trying-to-fit bytes: " << comm->beacon.mem_B << "\n"
-                        << "  In-use warps: " << gpus_in_use[tmp_dev_id].warps << "\n"
-                        << "  Trying-to-add warps: " << comm->beacon.warps << "\n");
-        // if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
-        //      GPUS[tmp_dev_id].mem_B) && (bemps_shm_p->gen->test_status != 1)) {
-        if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
-            GPUS[tmp_dev_id].mem_B) && (GPUS[tmp_dev_id].eager_launch != 1)) {
-        // if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
-        //      GPUS[tmp_dev_id].mem_B)) {
-          if (gpus_in_use[tmp_dev_id].warps < curr_min_warps) { // warp 비교는 제일 적은 메모리 사용량을 가진 GPU를 찾으려고 
-              curr_min_warps = gpus_in_use[tmp_dev_id].warps;
-              target_dev_id = tmp_dev_id;
-              assigned = 1;
+        if (comm->age > stats.max_age) {
+          stats.max_age = comm->age;
+        }
+
+        // The target device for a process must have memory available for it,
+        // and it should be the device with the least warps currently in use.
+        long curr_min_warps = LONG_MAX;
+        int target_dev_id = 0;
+
+        int normal_launched = 0;
+
+        for (tmp_dev_id = 0; tmp_dev_id < NUM_GPUS; tmp_dev_id++) {
+          BEMPS_SCHED_LOG("Checking device " << tmp_dev_id << "\n"
+                          << "  Total avail bytes: " << GPUS[tmp_dev_id].mem_B << "\n"
+                          << "  In-use bytes: " << gpus_in_use[tmp_dev_id].mem_B << "\n"
+                          << "  Trying-to-fit bytes: " << comm->beacon.mem_B << "\n"
+                          << "  In-use warps: " << gpus_in_use[tmp_dev_id].warps << "\n"
+                          << "  Trying-to-add warps: " << comm->beacon.warps << "\n");
+          // if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
+          //      GPUS[tmp_dev_id].mem_B) && (bemps_shm_p->gen->test_status != 1)) {
+
+          if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
+              GPUS[tmp_dev_id].mem_B) && (GPUS[tmp_dev_id].eager_launch != 1)) {
+
+          // if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
+          //     GPUS[tmp_dev_id].mem_B)) {
+
+          // if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
+          //      GPUS[tmp_dev_id].mem_B)) {
+
+            if (gpus_in_use[tmp_dev_id].warps < curr_min_warps) { // warp 비교는 제일 적은 메모리 사용량을 가진 GPU를 찾으려고 
+                curr_min_warps = gpus_in_use[tmp_dev_id].warps;
+                target_dev_id = tmp_dev_id;
+                assigned = 1;
+
+                // GPUS[target_dev_id].nl_status++;
+                
+                printf("Test NL\n");
+                
+                // normal_launched = 1; // 정상 launch
+
+                // motiv_cnt = 1; //
+            }
+          }
+          // else if(bemps_shm_p->gen->test_status == 1){ // 여유 메모리가 없는 상황에서 여분 메모리로 돌아가는 task 존재 o
+          //     // printf("memB2: %ld\n", comm->beacon.mem_B);
+          
+          //     BEMPS_SCHED_LOG("Couldn't fit " << comm->beacon.mem_B << "\n");
+          // }
+          else{
+            // printf("Current GPU Device %d mem_B: %ld\n", i, gpus_in_use[target_dev_id].mem_B);
+            // printf("Percentage: %f\n", ((float)(GPUS[target_dev_id].mem_B - gpus_in_use[target_dev_id].mem_B) / (float)comm->beacon.mem_B));
+            BEMPS_SCHED_LOG("Couldn't fit " << comm->beacon.mem_B << "\n");
           }
         }
-        // else if(bemps_shm_p->gen->test_status == 1){ // 여유 메모리가 없는 상황에서 여분 메모리로 돌아가는 task 존재 o
-        //     // printf("memB2: %ld\n", comm->beacon.mem_B);
         
-        //     BEMPS_SCHED_LOG("Couldn't fit " << comm->beacon.mem_B << "\n");
+        /////// for eager launch
+
+        // if(normal_launched != 1){
+        //   for (tmp_dev_id = 0; tmp_dev_id < NUM_GPUS; tmp_dev_id++) {
+        //     BEMPS_SCHED_LOG("Checking device " << tmp_dev_id << "\n"
+        //                     << "  Total avail bytes: " << GPUS[tmp_dev_id].mem_B << "\n"
+        //                     << "  In-use bytes: " << gpus_in_use[tmp_dev_id].mem_B << "\n"
+        //                     << "  Trying-to-fit bytes: " << comm->beacon.mem_B << "\n"
+        //                     << "  In-use warps: " << gpus_in_use[tmp_dev_id].warps << "\n"
+        //                     << "  Trying-to-add warps: " << comm->beacon.warps << "\n");
+        //     // if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
+        //     //      GPUS[tmp_dev_id].mem_B) && (bemps_shm_p->gen->test_status != 1)) {
+
+        //     if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
+        //         GPUS[tmp_dev_id].mem_B) && (GPUS[tmp_dev_id].eager_launch != 1)) {
+
+        //     // if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
+        //     //     GPUS[tmp_dev_id].mem_B)) {
+
+        //     // if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
+        //     //      GPUS[tmp_dev_id].mem_B)) {
+
+        //       if (gpus_in_use[tmp_dev_id].warps < curr_min_warps) { // warp 비교는 제일 적은 메모리 사용량을 가진 GPU를 찾으려고 
+        //           curr_min_warps = gpus_in_use[tmp_dev_id].warps;
+        //           target_dev_id = tmp_dev_id;
+        //           assigned = 1;
+
+        //           // normal_launched = 1; // 정상 launch
+
+        //           // motiv_cnt = 1; //
+        //       }
+        //     }
+        //     // else if(bemps_shm_p->gen->test_status == 1){ // 여유 메모리가 없는 상황에서 여분 메모리로 돌아가는 task 존재 o
+        //     //     // printf("memB2: %ld\n", comm->beacon.mem_B);
+            
+        //     //     BEMPS_SCHED_LOG("Couldn't fit " << comm->beacon.mem_B << "\n");
+        //     // }
+        //     else{
+        //       // printf("Current GPU Device %d mem_B: %ld\n", i, gpus_in_use[target_dev_id].mem_B);
+        //       // printf("Percentage: %f\n", ((float)(GPUS[target_dev_id].mem_B - gpus_in_use[target_dev_id].mem_B) / (float)comm->beacon.mem_B));
+        //       BEMPS_SCHED_LOG("Couldn't fit " << comm->beacon.mem_B << "\n");
+        //     }
+        //   }
         // }
-        else{
-          BEMPS_SCHED_LOG("Couldn't fit " << comm->beacon.mem_B << "\n");
-        }
-      }
-      
-      if (!assigned) {
-        for(tmp_dev_id = 0; tmp_dev_id < NUM_GPUS; tmp_dev_id++) {
-          if(GPUS[tmp_dev_id].eager_launch != 1){
-            if (gpus_in_use[tmp_dev_id].warps < curr_min_warps){
-              curr_min_warps = gpus_in_use[tmp_dev_id].warps;
-              target_dev_id = tmp_dev_id;
-              assigned = 1;
-              
-              
-            }
-          } 
-        }
+
+        // normal_launched = 0;
+
+        ///////
+
+        curr_min_warps = LONG_MAX;
         
-        if(assigned){
-          printf("Eager Launched\n");
-          printf("Dev: %d\n", target_dev_id);
-          printf("memB1: %ld\n", comm->beacon.mem_B);
-          printf("Assigned!\n"); // just for check
+        long curr_min_mem_B = LONG_MAX;
 
-          comm->beacon.actual_mem_B = comm->beacon.mem_B; // 기존의 메모리 사용량 저장
-          long quo = (ceil((GPUS[target_dev_id].mem_B - gpus_in_use[target_dev_id].mem_B) / 2097152)); // 200MB 정도의 여유 공간
+        if (!assigned) {
+          // Eager Launch motivation
+          // if(motiv_cnt == 1){
+          //   struct timespec specific_time;
+          //   struct tm *now;
+          //   int millsec;
+          //   clock_gettime( CLOCK_REALTIME, &specific_time);
+          //   now = localtime(&specific_time.tv_sec);
+          //   millsec = specific_time.tv_nsec;
 
-          if(quo > 100){
-            quo = quo - 100;
+          //   millsec = floor (specific_time.tv_nsec/1.0e6);
+
+
+          //   printf("When pending: [%04d/%02d/%02d] %02d:%02d:%02d msec : %d\n", 1900 + now->tm_year, 
+          //       now->tm_mon + 1, now->tm_mday, now->tm_hour, 
+          //       now->tm_min, now->tm_sec, millsec);
+
+          //   for(int i = 0; i < 4; i++){
+          //       printf("Current GPU Device %d mem_B: %ld\n", i, gpus_in_use[i].mem_B);
+          //   }
+          //   printf("memB1: %ld\n", comm->beacon.mem_B);
+          //   motiv_cnt = 0;
+          // }
+          
+          for(tmp_dev_id = 0; tmp_dev_id < NUM_GPUS; tmp_dev_id++) {
+            // printf("Current GPU Device %d warps: %ld\n", tmp_dev_id, gpus_in_use[tmp_dev_id].warps);
+            // if((GPUS[tmp_dev_id].eager_launch != 1)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
+            // if((GPUS[tmp_dev_id].eager_launch != 1) && ((((float)gpus_in_use[tmp_dev_id].mem_B + (float)comm->beacon.mem_B) < (float)MAX_OVERSUB))){ // 여기에 메모리 비율을 비교하는 것 까지 추가
+            // if((GPUS[tmp_dev_id].eager_launch != 1) && (((float)(GPUS[tmp_dev_id].mem_B - gpus_in_use[tmp_dev_id].mem_B) / (float)comm->beacon.mem_B) > 0.91)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
+            
+            // Computing contention 완화
+            // if((GPUS[tmp_dev_id].eager_launch != 1)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
+            //   if (gpus_in_use[tmp_dev_id].warps < curr_min_warps){
+            //     curr_min_warps = gpus_in_use[tmp_dev_id].warps;
+            //     target_dev_id = tmp_dev_id;
+            //     assigned = 1;
+                
+                
+            //   }
+            // }
+
+            // Memory contention 완화
+            if((GPUS[tmp_dev_id].eager_launch != 1)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
+            // if((GPUS[tmp_dev_id].eager_launch != 1) && (((float)(GPUS[tmp_dev_id].mem_B - gpus_in_use[tmp_dev_id].mem_B) / (float)comm->beacon.mem_B) > 0.91)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
+            // if((GPUS[tmp_dev_id].eager_launch != 1) && ((float)(gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) < (float)(GPUS[tmp_dev_id].mem_B) * 1.5 )){ // 여기에 메모리 비율을 비교하는 것 까지 추가
+            // if((GPUS[tmp_dev_id].eager_launch != 1)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
+              if (gpus_in_use[tmp_dev_id].mem_B < curr_min_mem_B){
+                curr_min_mem_B = gpus_in_use[tmp_dev_id].mem_B;
+                curr_min_warps = gpus_in_use[tmp_dev_id].warps;
+                target_dev_id = tmp_dev_id;
+                assigned = 1;
+              }
+              else if(gpus_in_use[tmp_dev_id].mem_B == curr_min_mem_B){
+                if(gpus_in_use[tmp_dev_id].warps < curr_min_warps){
+                  curr_min_warps = gpus_in_use[tmp_dev_id].warps;
+                  curr_min_mem_B = gpus_in_use[tmp_dev_id].mem_B;
+                  target_dev_id = tmp_dev_id;
+                  assigned = 1;
+                }
+              }
+            } 
           }
           
-          comm->beacon.mem_B = quo * 2097152; // 스케줄러가 할당해준 메모리    
-          bemps_shm_p->gen->test_status = 1; // 여분 메모리로 돌아가는 task 존재 표시
-              
-          comm->extra_status = 1;
-          GPUS[target_dev_id].eager_launch = 1;
+          if(assigned){
+            // while(1){
+            //   if(GPUS[target_dev_id].nl_status == 0){
+            //     break;
+            //   }
+            // }
+            for(int i = 0; i < 4; i++){
+              printf("Current GPU Device %d warps: %ld\n", i, gpus_in_use[i].warps);
+              printf("Current GPU Device %d mem_B: %ld\n", i, gpus_in_use[i].mem_B);
+            }
+            printf("Dev: %d\n", target_dev_id);
+            printf("Percentage: %f\n", ((float)(GPUS[target_dev_id].mem_B - gpus_in_use[target_dev_id].mem_B) / (float)comm->beacon.mem_B));
+            printf("memB1: %ld\n", comm->beacon.mem_B);
+            struct timespec specific_time;
+            struct tm *now;
+            int millsec;
+            clock_gettime( CLOCK_REALTIME, &specific_time);
+            now = localtime(&specific_time.tv_sec);
+            millsec = specific_time.tv_nsec;
 
-          el_tasks[target_dev_id] = comm;
+            millsec = floor (specific_time.tv_nsec/1.0e6);
+
+
+            printf("Eager launched, when assigned: [%04d/%02d/%02d] %02d:%02d:%02d msec : %d\n", 1900 + now->tm_year, 
+                now->tm_mon + 1, now->tm_mday, now->tm_hour, 
+                now->tm_min, now->tm_sec, millsec);
+
+            comm->beacon.actual_mem_B = comm->beacon.mem_B; // 기존의 메모리 사용량 저장
+            long quo = (ceil((GPUS[target_dev_id].mem_B - gpus_in_use[target_dev_id].mem_B) / 2097152)); // 200MB 정도의 여유 공간
+
+            if(quo > 100){
+              quo = quo - 100;
+            }
+            
+            comm->beacon.mem_B = quo * 2097152; // 스케줄러가 할당해준 메모리    
+            bemps_shm_p->gen->test_status = 1; // 여분 메모리로 돌아가는 task 존재 표시
+                
+            comm->extra_status = 1;
+            GPUS[target_dev_id].eager_launch = 1;
+
+            el_tasks[target_dev_id] = comm;
+
+            long tmp_bytes_to_add = comm->beacon.mem_B;
+            long tmp_warps_to_add = comm->beacon.warps;
+            BEMPS_SCHED_LOG("Adding " << tmp_bytes_to_add << " bytes "
+                            << "to device " << target_dev_id << "\n");
+            BEMPS_SCHED_LOG("Adding " << tmp_warps_to_add << " warps "
+                            << "to device " << target_dev_id << "\n");
+            gpus_in_use[target_dev_id].mem_B += tmp_bytes_to_add;
+            gpus_in_use[target_dev_id].warps += tmp_warps_to_add;
+            BEMPS_SCHED_LOG("sem_post for pid(" << comm->pid << ") "
+                                                    << "on device(" << target_dev_id
+                                                    << ")\n");
+            // FIXME Is this SCHEDULER_READ state helping at all?
+            comm->state = BEMPS_BEACON_STATE_SCHEDULER_READ_E;
+            comm->sched_notif.device_id = target_dev_id;
+            comm->state = BEMPS_BEACON_STATE_SCHEDULED_E;
+
+            if(GPUS[target_dev_id].nl_status == 0){
+              comm->ready = 1;
+            }
+
+            boomers.pop_front();
+
+            sem_post(&comm->sched_notif.sem);
+            ++*jobs_running_on_gpu;
+            --*jobs_waiting_on_gpu;
+          }
+
+          // else{
+          //   // comm->age++;
+          // }
+          ////
+          // FIXME: need to add stats, and possibly a way to reserve a
+          // GPU to prevent starving.
+
+          // just for test (Jeongjae)
+          //comm->age++;
+          //boomers.push_back(comm);
+          //
+
+          // don't adjust jobs-waiting-on-gpu. it was incremented when job first
+          // went into the boomers list
+        } else{
+          printf("Dev: %d\n", target_dev_id);
+          printf("memB1: %ld\n", comm->beacon.mem_B);
+
+          //
+
+          GPUS[target_dev_id].nl_status++;
+          printf("Num of NL tasks: %d\n", GPUS[target_dev_id].nl_status);
+
+          //
+
+          // printf("Assigned!\n"); // just for check
+          
+          struct timespec specific_time;
+          struct tm *now;
+          int millsec;
+          clock_gettime( CLOCK_REALTIME, &specific_time);
+          now = localtime(&specific_time.tv_sec);
+          millsec = specific_time.tv_nsec;
+
+          millsec = floor (specific_time.tv_nsec/1.0e6);
+
+
+          printf("Normal launched, when assigned: [%04d/%02d/%02d] %02d:%02d:%02d msec : %d\n", 1900 + now->tm_year, 
+              now->tm_mon + 1, now->tm_mday, now->tm_hour, 
+              now->tm_min, now->tm_sec, millsec);
 
           long tmp_bytes_to_add = comm->beacon.mem_B;
           long tmp_warps_to_add = comm->beacon.warps;
@@ -1242,60 +1533,23 @@ void sched_mgb_basic(void) {
           gpus_in_use[target_dev_id].mem_B += tmp_bytes_to_add;
           gpus_in_use[target_dev_id].warps += tmp_warps_to_add;
           BEMPS_SCHED_LOG("sem_post for pid(" << comm->pid << ") "
-                                                  << "on device(" << target_dev_id
-                                                  << ")\n");
+                                              << "on device(" << target_dev_id
+                                              << ")\n");
           // FIXME Is this SCHEDULER_READ state helping at all?
           comm->state = BEMPS_BEACON_STATE_SCHEDULER_READ_E;
           comm->sched_notif.device_id = target_dev_id;
           comm->state = BEMPS_BEACON_STATE_SCHEDULED_E;
 
-          boomers.pop_front();
+          boomers.pop_front(); //////////
 
           sem_post(&comm->sched_notif.sem);
+          
           ++*jobs_running_on_gpu;
           --*jobs_waiting_on_gpu;
         }
-        ////
-        // FIXME: need to add stats, and possibly a way to reserve a
-        // GPU to prevent starving.
-
-        // just for test (Jeongjae)
-        //comm->age++;
-        //boomers.push_back(comm);
-        //
-
-        // don't adjust jobs-waiting-on-gpu. it was incremented when job first
-        // went into the boomers list
-      } else{
-        printf("Dev: %d\n", target_dev_id);
-        printf("memB1: %ld\n", comm->beacon.mem_B);
-        printf("Assigned!\n"); // just for check
-        
-        long tmp_bytes_to_add = comm->beacon.mem_B;
-        long tmp_warps_to_add = comm->beacon.warps;
-        BEMPS_SCHED_LOG("Adding " << tmp_bytes_to_add << " bytes "
-                        << "to device " << target_dev_id << "\n");
-        BEMPS_SCHED_LOG("Adding " << tmp_warps_to_add << " warps "
-                        << "to device " << target_dev_id << "\n");
-        gpus_in_use[target_dev_id].mem_B += tmp_bytes_to_add;
-        gpus_in_use[target_dev_id].warps += tmp_warps_to_add;
-        BEMPS_SCHED_LOG("sem_post for pid(" << comm->pid << ") "
-                                            << "on device(" << target_dev_id
-                                            << ")\n");
-        // FIXME Is this SCHEDULER_READ state helping at all?
-        comm->state = BEMPS_BEACON_STATE_SCHEDULER_READ_E;
-        comm->sched_notif.device_id = target_dev_id;
-        comm->state = BEMPS_BEACON_STATE_SCHEDULED_E;
-
-        boomers.pop_front();
-
-        sem_post(&comm->sched_notif.sem);
-        
-        ++*jobs_running_on_gpu;
-        --*jobs_waiting_on_gpu;
       }
+      bemps_stopwatch_end(&sched_stopwatches[SCHED_STOPWATCH_AWAKE]);
     }
-    bemps_stopwatch_end(&sched_stopwatches[SCHED_STOPWATCH_AWAKE]);
   }
 }
 
@@ -1455,6 +1709,7 @@ void sched_single_assignment(void) {
         comm->pid = 0;
       } else {
         if (pid_to_device_id.find(comm->pid) == pid_to_device_id.end()) {
+          // printf("Not Found\n");
           // Not found: We're seeing this pid for the first time.
           // This should be a proper beacon (not a free)
           assert(comm->beacon.mem_B > 0);
@@ -1463,9 +1718,10 @@ void sched_single_assignment(void) {
           pid_to_device_id[comm->pid] = avail_device_ids.back();
           avail_device_ids.pop_back();
         } else {
+          // printf("Found\n");
           // Found: Do nothing.
         }
-
+        printf("Dev id: %d\n", pid_to_device_id[comm->pid]);
         comm->state = BEMPS_BEACON_STATE_SCHEDULER_READ_E;
         comm->sched_notif.device_id = pid_to_device_id[comm->pid];
         comm->state = BEMPS_BEACON_STATE_SCHEDULED_E;
@@ -1971,6 +2227,13 @@ int main(int argc, char **argv) {
   bemps_shm_p = bemps_sched_init(max_batch_size);
 
   bemps_shm_p->gen->test_status = 0;
+
+  // bemps_shm_p->gen->nl_status[0] = 0;
+  // bemps_shm_p->gen->nl_status[1] = 0;
+  // bemps_shm_p->gen->nl_status[2] = 0;
+  // bemps_shm_p->gen->nl_status[3] = 0;
+
+  // printf("%d %d %d %d\n", bemps_shm_p->gen->nl_status[0], bemps_shm_p->gen->nl_status[1], bemps_shm_p->gen->nl_status[2], bemps_shm_p->gen->nl_status[3]);
 
   p.start_sampling(); // stop is handled in sigint_handler
   sched();
