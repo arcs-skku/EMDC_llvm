@@ -321,8 +321,8 @@ static inline void _wait_for_sched(bemps_shm_comm_t *comm) {
 }
 
 static inline void _set_device(int device_id) {
-  int tmp = cudaFree(0);
-  printf("TMP: %d\n", tmp);
+  // int tmp = cudaFree(0);
+  // printf("TMP: %d\n", tmp);
   
   int rc;
   rc = cudaSetDevice(device_id);
@@ -365,6 +365,9 @@ void bemps_beacon(int bemps_tid, bemps_beacon_t *beacon) {
   comm = &bemps_shm.comm[q_idx];
   
   comm->extra_status = false; /// for check
+  
+  comm->nl_test = 0;
+  comm->ready = 0;
 
   _wait_for_sched(comm);
 
@@ -391,7 +394,7 @@ void bemps_beacon(int bemps_tid, bemps_beacon_t *beacon) {
  */
 extern "C" {
 long bemps_begin(int id, int gx, int gy, int gz, int bx, int by, int bz,
-                 int64_t membytes) {
+                 int64_t membytes, int &ret_dev_id) {
   long num_blocks;
   long threads_per_block;
   long warps;
@@ -429,6 +432,7 @@ long bemps_begin(int id, int gx, int gy, int gz, int bx, int by, int bz,
   // return alloc_mem
   bemps_shm_comm_t *comm;
   comm = &bemps_shm.comm[bemps_tid_to_q_idx[id]];
+  ret_dev_id = comm->sched_notif.device_id;
   printf("Finished bemps_begin: %ld\n", comm->beacon.mem_B);
   return comm->beacon.mem_B;
 }
@@ -458,6 +462,7 @@ void bemps_free(int bemps_tid) {
   long warps;
   long thread_blocks;
   int device_id;
+  int e_status;
 
   bemps_stopwatch_start(&bemps_stopwatches[BEMPS_STOPWATCH_FREE]);
 
@@ -470,7 +475,7 @@ void bemps_free(int bemps_tid) {
   
   printf("Orig_beacon_q_idx: %d\n", orig_beacon_q_idx);
   
-  comm = &bemps_shm.comm[orig_beacon_q_idx];\
+  comm = &bemps_shm.comm[orig_beacon_q_idx];
   
   // comm->extra_status = true; /// for check
   
@@ -479,6 +484,13 @@ void bemps_free(int bemps_tid) {
   thread_blocks = comm->beacon.thread_blocks;
   device_id = comm->sched_notif.device_id;
   bemps_tid_to_q_idx.erase(bemps_tid);
+
+  if(comm->extra_status == 1){
+    e_status = 1;
+  }
+  else{
+    e_status = 0;
+  }
   // _reset_comm(comm);
 
   BEMPS_STATS_LOG("pid " << pid << " , "
@@ -501,7 +513,10 @@ void bemps_free(int bemps_tid) {
   comm->beacon.thread_blocks = -1L * thread_blocks;
   comm->sched_notif.device_id = device_id;
   comm->pid = pid;
+  comm->extra_status = e_status;
   
+  // printf("Extra Status: %d\n", comm->extra_status);
+
   // XXX The negative value for the beacon resources indicates that this
   // is a free-beacon
 
@@ -721,5 +736,48 @@ void pre_bemps_free(int bemps_tid, int64_t membytes) {
   comm->state = BEMPS_BEACON_STATE_BEACON_FIRED_E;
   
   bemps_stopwatch_end(&bemps_stopwatches[BEMPS_STOPWATCH_FREE]);
+}
+}
+
+extern "C" {
+void nl_signal(int bemps_tid) {
+  int orig_beacon_q_idx;
+  int free_beacon_q_idx;
+  bemps_shm_comm_t *comm;
+  int device_id;
+
+  bemps_stopwatch_start(&bemps_stopwatches[BEMPS_STOPWATCH_FREE]);
+
+  orig_beacon_q_idx = bemps_tid_to_q_idx[bemps_tid];
+  comm = &bemps_shm.comm[orig_beacon_q_idx];
+
+  device_id = comm->sched_notif.device_id;
+  
+  printf("NL check dev: %d\n", device_id);
+
+  free_beacon_q_idx = _inc_head(&bemps_shm.gen->beacon_q_head);
+  comm = &bemps_shm.comm[free_beacon_q_idx];
+  _check_state(comm->state, free_beacon_q_idx);
+  
+  comm->timestamp_ns = _get_time_ns();
+  comm->nl_test = 1;
+  comm->g_ID = device_id;
+  comm->beacon.mem_B = 1;
+  comm->state = BEMPS_BEACON_STATE_BEACON_FIRED_E;
+  
+  bemps_stopwatch_end(&bemps_stopwatches[BEMPS_STOPWATCH_FREE]);
+}
+}
+
+extern "C" {
+void el_wait(int bemps_tid) {
+  bemps_shm_comm_t *comm;
+  comm = &bemps_shm.comm[bemps_tid_to_q_idx[bemps_tid]];
+
+  while(1){
+    if(comm->ready == 1){
+      break;
+    }
+  }
 }
 }
