@@ -1,0 +1,506 @@
+Device 0(0x7fa8d49d9e38) : Tesla V100-PCIE-16GB
+Device 1(0x7fa8d4a39290) : Tesla V100-PCIE-16GB
+Device 2(0x7fa8d4a986e8) : Tesla V100-PCIE-16GB
+Device 3(0x7fa8d4af7b40) : Tesla V100-PCIE-16GB
+Test_status: 0
+0
+0
+0
+0
+Test NL
+Dev: 0
+memB1: 8918138880
+Num of NL tasks: 1
+Normal launched, when assigned: [2024/09/03] 03:14:56 msec : 311
+Test NL
+Dev: 1
+memB1: 8645509120
+Num of NL tasks: 1
+Normal launched, when assigned: [2024/09/03] 03:14:56 msec : 311
+Test NL
+Dev: 2
+memB1: 13127122944
+Num of NL tasks: 1
+Normal launched, when assigned: [2024/09/03] 03:14:56 msec : 311
+Test NL
+Dev: 3
+memB1: 10782507008
+Num of NL tasks: 1
+Normal launched, when assigned: [2024/09/03] 03:14:56 msec : 311
+Test NL
+Dev: 1
+memB1: 7540310016
+Num of NL tasks: 2
+Normal launched, when assigned: [2024/09/03] 03:14:56 msec : 311
+Current GPU Device 0 warps: 1024
+Current GPU Device 0 mem_B: 8918138880
+Current GPU Device 1 warps: 15419872
+Current GPU Device 1 mem_B: 16185819136
+Current GPU Device 2 warps: 12500000
+Current GPU Device 2 mem_B: 13127122944
+Current GPU Device 3 warps: 5324000
+Current GPU Device 3 mem_B: 10782507008
+Dev: 0
+Percentage: 0.822457
+memB1: 8918138880
+Eager launched, when assigned: [2024/09/03] 03:14:56 msec : 311
+Test NL
+Dev: 3
+memB1: 5032116224
+Num of NL tasks: 2
+Normal launched, when assigned: [2024/09/03] 03:14:56 msec : 311
+Current GPU Device 0 warps: 2048
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 15419872
+Current GPU Device 1 mem_B: 16185819136
+Current GPU Device 2 warps: 12500000
+Current GPU Device 2 mem_B: 13127122944
+Current GPU Device 3 warps: 22101216
+Current GPU Device 3 mem_B: 15814623232
+Dev: 2
+Percentage: 0.414546
+memB1: 7540310016
+Eager launched, when assigned: [2024/09/03] 03:14:56 msec : 311
+GPU : 1, Eager Launch 0
+GPU : 1, number of remaining NL task 1
+CHECK1
+Free Mem: 8645509120, When Free: [2024/09/03] 03:14:59 msec : 616
+gpus_in_use[1].mem_B : 7540310016
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 2048
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 7031264
+Current GPU Device 1 mem_B: 7540310016
+Current GPU Device 2 warps: 19531264
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 22101216
+Current GPU Device 3 mem_B: 15814623232
+Dev: 1
+Percentage: 0.663711
+memB1: 13127122944
+Eager launched, when assigned: [2024/09/03] 03:14:59 msec : 616
+GPU : 1, Eager Launch 1
+GPU : 1, number of remaining NL task 0
+Now El Task can be launched
+GPU : 3, Eager Launch 0
+GPU : 3, number of remaining NL task 1
+CHECK1
+Fully get mem
+Free Mem: 2915041280, When Free: [2024/09/03] 03:15:01 msec : 217
+gpus_in_use[1].mem_B : 13127122944
+Helllllllllllllllllllllllllllllllllllo
+GPU : 3, Eager Launch 0
+GPU : 3, number of remaining NL task 0
+GPU : 0, Eager Launch 1
+GPU : 0, number of remaining NL task 0
+Now El Task can be launched
+GPU : 2, Eager Launch 1
+GPU : 2, number of remaining NL task 0
+Now El Task can be launched
+CHECK1
+Fully get mem
+Free Mem: 8501854208, When Free: [2024/09/03] 03:15:03 msec : 919
+gpus_in_use[2].mem_B : 7540310016
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 2048
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 12500000
+Current GPU Device 1 mem_B: 13127122944
+Current GPU Device 2 warps: 7031264
+Current GPU Device 2 mem_B: 7540310016
+Current GPU Device 3 warps: 22101216
+Current GPU Device 3 mem_B: 15814623232
+Dev: 2
+Percentage: 0.626669
+memB1: 13903069184
+Eager launched, when assigned: [2024/09/03] 03:15:03 msec : 919
+CHECK1
+Fully get mem
+Free Mem: 7124025344, When Free: [2024/09/03] 03:15:05 msec : 720
+gpus_in_use[0].mem_B : 8918138880
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 1024
+Current GPU Device 0 mem_B: 8918138880
+Current GPU Device 1 warps: 12500000
+Current GPU Device 1 mem_B: 13127122944
+Current GPU Device 2 warps: 13943264
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 22101216
+Current GPU Device 3 mem_B: 15814623232
+Dev: 0
+Percentage: 0.558751
+memB1: 13127122944
+Eager launched, when assigned: [2024/09/03] 03:15:05 msec : 720
+Current GPU Device 0 warps: 12501024
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 12500000
+Current GPU Device 1 mem_B: 13127122944
+Current GPU Device 2 warps: 13943264
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 22101216
+Current GPU Device 3 mem_B: 15814623232
+Dev: 1
+Percentage: 0.361552
+memB1: 8645509120
+Eager launched, when assigned: [2024/09/03] 03:15:05 msec : 720
+Now El Task can be launched
+CHECK1
+Fully get mem
+Free Mem: 2139095040, When Free: [2024/09/03] 03:15:06 msec : 921
+gpus_in_use[2].mem_B : 13903069184
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 12501024
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 20888608
+Current GPU Device 1 mem_B: 16042164224
+Current GPU Device 2 warps: 6912000
+Current GPU Device 2 mem_B: 13903069184
+Current GPU Device 3 warps: 22101216
+Current GPU Device 3 mem_B: 15814623232
+Dev: 2
+Percentage: 0.241513
+memB1: 9729736704
+Eager launched, when assigned: [2024/09/03] 03:15:06 msec : 921
+CHECK1
+Fully get mem
+Free Mem: 7396655104, When Free: [2024/09/03] 03:15:07 msec : 221
+gpus_in_use[1].mem_B : 8645509120
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 12501024
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 8388608
+Current GPU Device 1 mem_B: 8645509120
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 22101216
+Current GPU Device 3 mem_B: 15814623232
+Dev: 1
+Percentage: 0.705533
+memB1: 10782507008
+Eager launched, when assigned: [2024/09/03] 03:15:07 msec : 221
+CHECK1
+Fully get mem
+Free Mem: 2915041280, When Free: [2024/09/03] 03:15:08 msec : 222
+gpus_in_use[0].mem_B : 13127122944
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 12500000
+Current GPU Device 0 mem_B: 13127122944
+Current GPU Device 1 warps: 13712608
+Current GPU Device 1 mem_B: 16042164224
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 22101216
+Current GPU Device 3 mem_B: 15814623232
+Dev: 0
+Percentage: 0.350500
+memB1: 8918138880
+Eager launched, when assigned: [2024/09/03] 03:15:08 msec : 222
+Current GPU Device 0 warps: 12501024
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 13712608
+Current GPU Device 1 mem_B: 16042164224
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 22101216
+Current GPU Device 3 mem_B: 15814623232
+Dev: 3
+Percentage: 0.058128
+memB1: 7540310016
+Eager launched, when assigned: [2024/09/03] 03:15:08 msec : 222
+CHECK1
+Partially get mem
+Free Mem: 0, When Free: [2024/09/03] 03:15:08 msec : 423
+gpus_in_use[3].mem_B : 16043212800
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Fully get mem
+Free Mem: 5259657216, When Free: [2024/09/03] 03:15:09 msec : 624
+gpus_in_use[1].mem_B : 10782507008
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 12501024
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 5324000
+Current GPU Device 1 mem_B: 10782507008
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 12355264
+Current GPU Device 3 mem_B: 16043212800
+Dev: 1
+Percentage: 0.416727
+memB1: 13127122944
+Eager launched, when assigned: [2024/09/03] 03:15:09 msec : 624
+CHECK1
+Fully get mem
+Free Mem: 8502902784, When Free: [2024/09/03] 03:15:10 msec : 926
+gpus_in_use[3].mem_B : 7540310016
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 12501024
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 17824000
+Current GPU Device 1 mem_B: 16042164224
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 7031264
+Current GPU Device 3 mem_B: 7540310016
+Dev: 3
+Percentage: 0.976955
+memB1: 8918138880
+Eager launched, when assigned: [2024/09/03] 03:15:10 msec : 926
+Now El Task can be launched
+Now El Task can be launched
+CHECK1
+Fully get mem
+Free Mem: 7124025344, When Free: [2024/09/03] 03:15:12 msec : 929
+gpus_in_use[3].mem_B : 8918138880
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 12501024
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 17824000
+Current GPU Device 1 mem_B: 16042164224
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 1024
+Current GPU Device 3 mem_B: 8918138880
+Dev: 3
+Percentage: 0.848393
+memB1: 8645509120
+Eager launched, when assigned: [2024/09/03] 03:15:12 msec : 929
+CHECK1
+Fully get mem
+Free Mem: 7124025344, When Free: [2024/09/03] 03:15:13 msec : 930
+gpus_in_use[0].mem_B : 8918138880
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 1024
+Current GPU Device 0 mem_B: 8918138880
+Current GPU Device 1 warps: 17824000
+Current GPU Device 1 mem_B: 16042164224
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 8389632
+Current GPU Device 3 mem_B: 16042164224
+Dev: 0
+Percentage: 0.527566
+memB1: 13903069184
+Eager launched, when assigned: [2024/09/03] 03:15:13 msec : 930
+Now El Task can be launched
+CHECK1
+Free Mem: 7124025344, When Free: [2024/09/03] 03:15:16 msec : 33
+gpus_in_use[3].mem_B : 8918138880
+Helllllllllllllllllllllllllllllllllllo
+Test NL
+Dev: 3
+memB1: 5032116224
+Num of NL tasks: 1
+Normal launched, when assigned: [2024/09/03] 03:15:16 msec : 33
+Current GPU Device 0 warps: 6913024
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 17824000
+Current GPU Device 1 mem_B: 16042164224
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 16778240
+Current GPU Device 3 mem_B: 13950255104
+Dev: 3
+Percentage: 0.258201
+memB1: 8918138880
+Eager launched, when assigned: [2024/09/03] 03:15:16 msec : 33
+GPU : 3, Eager Launch 1
+GPU : 3, number of remaining NL task 0
+Now El Task can be launched
+CHECK1
+Fully get mem
+Free Mem: 2139095040, When Free: [2024/09/03] 03:15:17 msec : 835
+gpus_in_use[0].mem_B : 13903069184
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Free Mem: 2139095040, When Free: [2024/09/03] 03:15:20 msec : 38
+gpus_in_use[2].mem_B : 13903069184
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Fully get mem
+Free Mem: 2092957696, When Free: [2024/09/03] 03:15:20 msec : 639
+gpus_in_use[3].mem_B : 13950255104
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Fully get mem
+Free Mem: 2915041280, When Free: [2024/09/03] 03:15:21 msec : 941
+gpus_in_use[1].mem_B : 13127122944
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Free Mem: 13903069184, When Free: [2024/09/03] 03:15:22 msec : 541
+gpus_in_use[2].mem_B : 0
+Helllllllllllllllllllllllllllllllllllo
+Test NL
+Dev: 2
+memB1: 13903069184
+Num of NL tasks: 1
+Normal launched, when assigned: [2024/09/03] 03:15:22 msec : 542
+Current GPU Device 0 warps: 6912000
+Current GPU Device 0 mem_B: 13903069184
+Current GPU Device 1 warps: 12500000
+Current GPU Device 1 mem_B: 13127122944
+Current GPU Device 2 warps: 6912000
+Current GPU Device 2 mem_B: 13903069184
+Current GPU Device 3 warps: 16778240
+Current GPU Device 3 mem_B: 13950255104
+Dev: 1
+Percentage: 0.321263
+memB1: 9729736704
+Eager launched, when assigned: [2024/09/03] 03:15:22 msec : 542
+Current GPU Device 0 warps: 6912000
+Current GPU Device 0 mem_B: 13903069184
+Current GPU Device 1 warps: 46054432
+Current GPU Device 1 mem_B: 16042164224
+Current GPU Device 2 warps: 6912000
+Current GPU Device 2 mem_B: 13903069184
+Current GPU Device 3 warps: 16778240
+Current GPU Device 3 mem_B: 13950255104
+Dev: 0
+Percentage: 0.311640
+memB1: 7540310016
+Eager launched, when assigned: [2024/09/03] 03:15:22 msec : 542
+Current GPU Device 0 warps: 13943264
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 46054432
+Current GPU Device 1 mem_B: 16042164224
+Current GPU Device 2 warps: 6912000
+Current GPU Device 2 mem_B: 13903069184
+Current GPU Device 3 warps: 16778240
+Current GPU Device 3 mem_B: 13950255104
+Dev: 2
+Percentage: 0.241513
+memB1: 9729736704
+Eager launched, when assigned: [2024/09/03] 03:15:22 msec : 542
+Current GPU Device 0 warps: 13943264
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 46054432
+Current GPU Device 1 mem_B: 16042164224
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 16778240
+Current GPU Device 3 mem_B: 13950255104
+Dev: 3
+Percentage: 0.266343
+memB1: 8645509120
+Eager launched, when assigned: [2024/09/03] 03:15:22 msec : 542
+Now El Task can be launched
+CHECK1
+Partially get mem
+Free Mem: 0, When Free: [2024/09/03] 03:15:25 msec : 45
+gpus_in_use[3].mem_B : 16043212800
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Fully get mem
+Free Mem: 7397703680, When Free: [2024/09/03] 03:15:25 msec : 746
+gpus_in_use[3].mem_B : 8645509120
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Fully get mem
+Free Mem: 6312427520, When Free: [2024/09/03] 03:15:25 msec : 747
+gpus_in_use[1].mem_B : 9729736704
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 13943264
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 33554432
+Current GPU Device 1 mem_B: 9729736704
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 8388608
+Current GPU Device 3 mem_B: 8645509120
+Dev: 3
+Percentage: 0.547176
+memB1: 13903069184
+Eager launched, when assigned: [2024/09/03] 03:15:25 msec : 747
+Current GPU Device 0 warps: 13943264
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 33554432
+Current GPU Device 1 mem_B: 9729736704
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 15300608
+Current GPU Device 3 mem_B: 16042164224
+Dev: 1
+Percentage: 0.797257
+memB1: 8182038528
+Eager launched, when assigned: [2024/09/03] 03:15:25 msec : 747
+CHECK1
+Fully get mem
+Free Mem: 2139095040, When Free: [2024/09/03] 03:15:26 msec : 47
+gpus_in_use[3].mem_B : 13903069184
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 13943264
+Current GPU Device 0 mem_B: 16042164224
+Current GPU Device 1 warps: 37554432
+Current GPU Device 1 mem_B: 16042164224
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 6912000
+Current GPU Device 3 mem_B: 13903069184
+Dev: 3
+Percentage: 0.263492
+memB1: 8918138880
+Eager launched, when assigned: [2024/09/03] 03:15:26 msec : 47
+GPU : 2, Eager Launch 1
+GPU : 2, number of remaining NL task 0
+Now El Task can be launched
+CHECK1
+Free Mem: 2139095040, When Free: [2024/09/03] 03:15:30 msec : 253
+gpus_in_use[0].mem_B : 13903069184
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Free Mem: 13903069184, When Free: [2024/09/03] 03:15:31 msec : 154
+gpus_in_use[0].mem_B : 0
+Helllllllllllllllllllllllllllllllllllo
+Test NL
+Dev: 0
+memB1: 13127122944
+Num of NL tasks: 1
+Normal launched, when assigned: [2024/09/03] 03:15:31 msec : 154
+Now El Task can be launched
+CHECK1
+Free Mem: 2139095040, When Free: [2024/09/03] 03:15:35 msec : 960
+gpus_in_use[3].mem_B : 13903069184
+Helllllllllllllllllllllllllllllllllllo
+GPU : 0, Eager Launch 0
+GPU : 0, number of remaining NL task 0
+CHECK1
+Free Mem: 6312427520, When Free: [2024/09/03] 03:15:37 msec : 362
+gpus_in_use[1].mem_B : 9729736704
+Helllllllllllllllllllllllllllllllllllo
+Current GPU Device 0 warps: 12500000
+Current GPU Device 0 mem_B: 13127122944
+Current GPU Device 1 warps: 33554432
+Current GPU Device 1 mem_B: 9729736704
+Current GPU Device 2 warps: 40466432
+Current GPU Device 2 mem_B: 16042164224
+Current GPU Device 3 warps: 6912000
+Current GPU Device 3 mem_B: 13903069184
+Dev: 1
+Percentage: 0.496925
+memB1: 13127122944
+Eager launched, when assigned: [2024/09/03] 03:15:37 msec : 362
+CHECK1
+Free Mem: 13127122944, When Free: [2024/09/03] 03:15:38 msec : 163
+gpus_in_use[0].mem_B : 0
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Free Mem: 2139095040, When Free: [2024/09/03] 03:15:38 msec : 263
+gpus_in_use[2].mem_B : 13903069184
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Fully get mem
+Free Mem: 2915041280, When Free: [2024/09/03] 03:15:38 msec : 363
+gpus_in_use[1].mem_B : 13127122944
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Free Mem: 13903069184, When Free: [2024/09/03] 03:15:40 msec : 666
+gpus_in_use[2].mem_B : 0
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Free Mem: 13127122944, When Free: [2024/09/03] 03:15:44 msec : 571
+gpus_in_use[1].mem_B : 0
+Helllllllllllllllllllllllllllllllllllo
+CHECK1
+Free Mem: 13903069184, When Free: [2024/09/03] 03:15:44 msec : 872
+gpus_in_use[3].mem_B : 0
+Helllllllllllllllllllllllllllllllllllo
