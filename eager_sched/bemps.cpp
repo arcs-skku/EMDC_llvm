@@ -362,12 +362,16 @@ void bemps_beacon(int bemps_tid, bemps_beacon_t *beacon) {
   q_idx = _push_beacon(beacon);
   bemps_tid_to_q_idx[bemps_tid] = q_idx;
 
+  // printf("app type in bemps_beacon: %d\n", beacon->app_type);
+
   comm = &bemps_shm.comm[q_idx];
   
   comm->extra_status = false; /// for check
   
   comm->nl_test = 0;
   comm->ready = 0;
+  comm->ready2 = 0;
+  comm->a_type = beacon->app_type;
 
   _wait_for_sched(comm);
 
@@ -392,9 +396,12 @@ void bemps_beacon(int bemps_tid, bemps_beacon_t *beacon) {
 /** a simple wrapper to bemps_beacon
  * added by Chao
  */
+// extern "C" {
+// long bemps_begin(int id, int gx, int gy, int gz, int bx, int by, int bz,
+//                  int64_t membytes, int &ret_dev_id) {
 extern "C" {
 long bemps_begin(int id, int gx, int gy, int gz, int bx, int by, int bz,
-                 int64_t membytes, int &ret_dev_id) {
+                 int64_t membytes, int &ret_dev_id, int mem_intensive, int &wait_sign) {
   long num_blocks;
   long threads_per_block;
   long warps;
@@ -426,6 +433,8 @@ long bemps_begin(int id, int gx, int gy, int gz, int bx, int by, int bz,
   beacon.thread_blocks = num_blocks;
   beacon.changed = 0;
   beacon.actual_mem_B = membytes;
+  beacon.app_type = mem_intensive;
+  // printf("app type before bemps_beacon: %d\n", beacon.app_type);
   bemps_beacon(id, &beacon);
   bemps_stopwatch_end(&bemps_stopwatches[BEMPS_STOPWATCH_BEACON]);
 
@@ -433,6 +442,7 @@ long bemps_begin(int id, int gx, int gy, int gz, int bx, int by, int bz,
   bemps_shm_comm_t *comm;
   comm = &bemps_shm.comm[bemps_tid_to_q_idx[id]];
   ret_dev_id = comm->sched_notif.device_id;
+  wait_sign = comm->w_sign;
   printf("Finished bemps_begin: %ld\n", comm->beacon.mem_B);
   return comm->beacon.mem_B;
 }
@@ -463,7 +473,7 @@ void bemps_free(int bemps_tid) {
   long thread_blocks;
   int device_id;
   int e_status;
-
+  int m_type;
   bemps_stopwatch_start(&bemps_stopwatches[BEMPS_STOPWATCH_FREE]);
 
   //
@@ -483,8 +493,9 @@ void bemps_free(int bemps_tid) {
   warps = comm->beacon.warps;
   thread_blocks = comm->beacon.thread_blocks;
   device_id = comm->sched_notif.device_id;
+  m_type = comm->a_type;
   bemps_tid_to_q_idx.erase(bemps_tid);
-
+  printf("App type in bemps_free: %d\n", m_type);
   if(comm->extra_status == 1){
     e_status = 1;
   }
@@ -514,7 +525,7 @@ void bemps_free(int bemps_tid) {
   comm->sched_notif.device_id = device_id;
   comm->pid = pid;
   comm->extra_status = e_status;
-  
+  comm->beacon.app_type = m_type;
   // printf("Extra Status: %d\n", comm->extra_status);
 
   // XXX The negative value for the beacon resources indicates that this
@@ -745,6 +756,7 @@ void nl_signal(int bemps_tid) {
   int free_beacon_q_idx;
   bemps_shm_comm_t *comm;
   int device_id;
+  int chk_sign = 0;
 
   bemps_stopwatch_start(&bemps_stopwatches[BEMPS_STOPWATCH_FREE]);
 
@@ -753,6 +765,10 @@ void nl_signal(int bemps_tid) {
 
   device_id = comm->sched_notif.device_id;
   
+  if(comm->beacon.actual_mem_B == comm->beacon.mem_B){
+    chk_sign = 1;
+  }
+
   printf("NL check dev: %d\n", device_id);
 
   free_beacon_q_idx = _inc_head(&bemps_shm.gen->beacon_q_head);
@@ -763,6 +779,7 @@ void nl_signal(int bemps_tid) {
   comm->nl_test = 1;
   comm->g_ID = device_id;
   comm->beacon.mem_B = 1;
+  // comm->is_this_nl = chk_sign;
   comm->state = BEMPS_BEACON_STATE_BEACON_FIRED_E;
   
   bemps_stopwatch_end(&bemps_stopwatches[BEMPS_STOPWATCH_FREE]);
@@ -770,14 +787,117 @@ void nl_signal(int bemps_tid) {
 }
 
 extern "C" {
-void el_wait(int bemps_tid) {
+void launch_signal(int bemps_tid) {
+  int orig_beacon_q_idx;
+  int free_beacon_q_idx;
+  bemps_shm_comm_t *comm;
+  int device_id;
+  int chk_sign = 0;
+
+  bemps_stopwatch_start(&bemps_stopwatches[BEMPS_STOPWATCH_FREE]);
+
+  orig_beacon_q_idx = bemps_tid_to_q_idx[bemps_tid];
+  comm = &bemps_shm.comm[orig_beacon_q_idx];
+
+  device_id = comm->sched_notif.device_id;
+  
+  if(comm->beacon.actual_mem_B == comm->beacon.mem_B){
+    chk_sign = 1;
+  }
+  
+  printf("NL check dev: %d\n", device_id);
+
+  free_beacon_q_idx = _inc_head(&bemps_shm.gen->beacon_q_head);
+  comm = &bemps_shm.comm[free_beacon_q_idx];
+  _check_state(comm->state, free_beacon_q_idx);
+  
+  comm->timestamp_ns = _get_time_ns();
+  // comm->nl_test = 1;
+  comm->g_ID = device_id;
+  comm->beacon.mem_B = 1;
+  comm->state = BEMPS_BEACON_STATE_BEACON_FIRED_E;
+  comm->launch = 1;
+  comm->is_this_nl = chk_sign;
+  bemps_stopwatch_end(&bemps_stopwatches[BEMPS_STOPWATCH_FREE]);
+}
+}
+
+extern "C" {
+void el_wait(int bemps_tid, int &w_s) {
+  bemps_shm_comm_t *comm;
+  comm = &bemps_shm.comm[bemps_tid_to_q_idx[bemps_tid]];
+
+  // while(1){
+    // if(comm->ready == 1){
+      w_s = comm->ready;
+      // break;
+    // }
+  // }
+  // comm->ready = 0;
+}
+}
+
+extern "C" {
+void el_wait2(int bemps_tid) {
   bemps_shm_comm_t *comm;
   comm = &bemps_shm.comm[bemps_tid_to_q_idx[bemps_tid]];
 
   while(1){
-    if(comm->ready == 1){
+    if(comm->ready2 == 1){
+      // w_s = comm->ready;
       break;
     }
   }
+  // comm->ready = 0;
 }
 }
+
+extern "C" {
+void chk_wait_sign(int bemps_tid, int &w_s) {
+  bemps_shm_comm_t *comm;
+  comm = &bemps_shm.comm[bemps_tid_to_q_idx[bemps_tid]];
+
+  w_s = comm->w_sign;
+}
+}
+
+// extern "C" {
+// void el_kernel_possible(int bemps_tid, size_t mem_usage) {
+//   int orig_beacon_q_idx;
+//   int free_beacon_q_idx;
+//   bemps_shm_comm_t *comm;
+//   int device_id;
+
+//   bemps_stopwatch_start(&bemps_stopwatches[BEMPS_STOPWATCH_FREE]);
+
+//   orig_beacon_q_idx = bemps_tid_to_q_idx[bemps_tid];
+//   comm = &bemps_shm.comm[orig_beacon_q_idx];
+
+//   device_id = comm->sched_notif.device_id;
+  
+//   printf("NL check dev: %d\n", device_id);
+
+//   free_beacon_q_idx = _inc_head(&bemps_shm.gen->beacon_q_head);
+//   comm = &bemps_shm.comm[free_beacon_q_idx];
+//   _check_state(comm->state, free_beacon_q_idx);
+  
+//   comm->timestamp_ns = _get_time_ns();
+//   comm->chk_el_run = 1;
+//   comm->g_ID = device_id;
+//   comm->beacon.mem_B = mem_usage;
+//   comm->state = BEMPS_BEACON_STATE_BEACON_FIRED_E;
+  
+//   bemps_stopwatch_end(&bemps_stopwatches[BEMPS_STOPWATCH_FREE]);
+
+//   bemps_shm_comm_t *tmp_comm;
+//   tmp_comm = &bemps_shm.comm[bemps_tid_to_q_idx[bemps_tid]];
+
+//   while(1){
+//     if(tmp_comm->ready == 1){
+//       break;
+//     }
+//   }
+//   tmp_comm->ready = 0;
+
+// }
+// }
