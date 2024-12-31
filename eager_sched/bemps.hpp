@@ -32,6 +32,7 @@ typedef struct {
   long thread_blocks; // same
   long actual_mem_B; // add for actual mem_req of extra task
 
+  int app_type;
   bool changed; // 1 = eager free
   // TODO: constant memory
 } bemps_beacon_t;
@@ -62,7 +63,12 @@ typedef struct {
   int nl_test;
   int g_ID;
   int ready;
-
+  int ready2;
+  int chk_el_run;
+  int w_sign;
+  int a_type;
+  int launch;
+  int is_this_nl;
   // int nl_status[4]; // test
 } bemps_shm_comm_t;
 
@@ -128,9 +134,14 @@ typedef struct {
  */
 void bemps_beacon(int bemps_tid, bemps_beacon_t *bemps_beacon);
 
+// extern "C" {
+// long bemps_begin(int id, int gx, int gy, int gz, int bx, int by, int bz,
+//                  int64_t memsize, int &ret_dev_id);
+// }
+
 extern "C" {
 long bemps_begin(int id, int gx, int gy, int gz, int bx, int by, int bz,
-                 int64_t memsize, int &ret_dev_id);
+                 int64_t memsize, int &ret_dev_id, int mem_intensive, int &wait_sign);
 }
 
 /*
@@ -187,7 +198,23 @@ void nl_signal(int bemps_tid);
 }
 
 extern "C" {
-void el_wait(int bemps_tid);
+void launch_signal(int bemps_tid);
 }
+
+extern "C" {
+void el_wait(int bemps_tid, int &w_s);
+}
+
+extern "C" {
+void el_wait2(int bemps_tid);
+}
+
+extern "C" {
+void chk_wait_sign(int bemps_tid, int &w_s);
+}
+
+// extern "C" {
+// void el_kernel_possible(int bemps_tid, size_t mem_usage);
+// }
 
 #endif
