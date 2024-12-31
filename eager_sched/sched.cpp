@@ -156,6 +156,8 @@ struct gpu_s {
   unsigned int total_warps;
   bool eager_launch;
   int nl_status;
+  int m_intensive;
+  int launch_status;
 };
 
 struct gpu_in_use_s {
@@ -220,7 +222,7 @@ sched_stats_t stats;
 sched_alg_e which_scheduler;
 int max_batch_size;
 
-int NUM_GPUS = 4; // set by init_gpus()
+int NUM_GPUS = 2; // set by init_gpus()
 // int NUM_GPUS = 1; // set by init_gpus()
 
 struct gpu_s *GPUS;
@@ -283,7 +285,7 @@ static inline void init_gpus(void) {
   cudaDeviceProp prop;
 
   cudaGetDeviceCount(&NUM_GPUS);
-  NUM_GPUS = 1;
+  NUM_GPUS = 2;
   
   assert(NUM_GPUS > 0 && "Must have at least 1 GPU to use the scheduler\n");
 
@@ -298,7 +300,7 @@ static inline void init_gpus(void) {
         BEMPS_SCHED_LOG("  adjusting mem_B for GTX 1080" << "\n");
         GPUS[i].mem_B = GTX_1080_SPECS_MEM_B;
     } else if(strncmp(prop.name, "Tesla V100-PCIE-16GB", 20) == 0){
-        BEMPS_SCHED_LOG("  adjusting mem_B for Tesla V100-SXM2-32GB" << "\n");
+        BEMPS_SCHED_LOG("  adjusting mem_B for Tesla V100-SXM2-16GB" << "\n");
         GPUS[i].mem_B = V100_SXM2_SPECS_MEM_B;
     } else {
 	printf("%s\n", prop.name);
@@ -314,6 +316,8 @@ static inline void init_gpus(void) {
     GPUS[i].eager_launch = false; // Set there is no eager launch task
 
     GPUS[i].nl_status = 0;
+    GPUS[i].m_intensive = 0;
+    GPUS[i].launch_status = 0;
 
     gpus_in_use[i].sms = new std::vector<std::pair<int, int>>;
   }
@@ -1085,30 +1089,65 @@ void sched_mgb_basic(void) {
 
           // add for eager launch task is terminated
     
-          // add to get extra memory
+          // // add to get extra memory
+          // // GPUS[tmp_dev_id].launch_status--;
+          // // printf("Number of Learning task in GPU %d: %d\n", tmp_dev_id, GPUS[tmp_dev_id].launch_status);
 
-          if((comm->extra_status != 1) && (GPUS[tmp_dev_id].eager_launch == 1)){
-            if(el_tasks[tmp_dev_id]->beacon.mem_B - tmp_bytes_to_free >= el_tasks[tmp_dev_id]->beacon.actual_mem_B){
-              printf("Fully get mem\n");
-              long tmp_extra_free_mem = el_tasks[tmp_dev_id]->beacon.actual_mem_B - el_tasks[tmp_dev_id]->beacon.mem_B + tmp_bytes_to_free;
-              // gpus_in_use[tmp_dev_id].mem_B = gpus_in_use[tmp_dev_id].mem_B - el_tasks[tmp_dev_id]->beacon.mem_B + el_tasks[tmp_dev_id]->beacon.actual_mem_B + tmp_bytes_to_free;
-              el_tasks[tmp_dev_id]->beacon.mem_B = el_tasks[tmp_dev_id]->beacon.actual_mem_B;
-              el_tasks[tmp_dev_id]->ready = 1;
-              GPUS[tmp_dev_id].eager_launch = 0;
-              el_tasks[tmp_dev_id]->extra_status = 0;
-              tmp_bytes_to_free = tmp_extra_free_mem;
-            }
-            else{
-              printf("Partially get mem\n");
-              el_tasks[tmp_dev_id]->beacon.mem_B = el_tasks[tmp_dev_id]->beacon.mem_B - tmp_bytes_to_free;
-              tmp_bytes_to_free = 0;
-            }
-          }
+          // // printf("Extra Status: %d\n", comm->extra_status);
 
-          if(comm->extra_status == 1){
-           GPUS[tmp_dev_id].eager_launch = 0;
-           comm->extra_status = 0; 
-          }
+          // if(comm->extra_status != 1){
+          //   GPUS[tmp_dev_id].launch_status--;
+          // }
+
+          // // printf("Extra Status: %d\n", comm->extra_status);
+
+          // if((GPUS[tmp_dev_id].launch_status <= 0) && (GPUS[tmp_dev_id].eager_launch == 1)){
+          //   el_tasks[tmp_dev_id]->ready = 1;
+          // }
+
+          // // printf("Extra Status: %d\n", comm->extra_status);
+          
+          // if((comm->extra_status != 1) && (GPUS[tmp_dev_id].eager_launch == 1)){
+          //   if(el_tasks[tmp_dev_id]->beacon.mem_B - tmp_bytes_to_free >= el_tasks[tmp_dev_id]->beacon.actual_mem_B){
+          //     printf("Fully get mem\n");
+          //     long tmp_extra_free_mem = el_tasks[tmp_dev_id]->beacon.actual_mem_B - el_tasks[tmp_dev_id]->beacon.mem_B + tmp_bytes_to_free;
+          //     // gpus_in_use[tmp_dev_id].mem_B = gpus_in_use[tmp_dev_id].mem_B - el_tasks[tmp_dev_id]->beacon.mem_B + el_tasks[tmp_dev_id]->beacon.actual_mem_B + tmp_bytes_to_free;
+          //     el_tasks[tmp_dev_id]->beacon.mem_B = el_tasks[tmp_dev_id]->beacon.actual_mem_B;
+          //     el_tasks[tmp_dev_id]->ready = 1;
+          //     el_tasks[tmp_dev_id]->ready2 = 1;
+              
+          //      GPUS[tmp_dev_id].launch_status++;
+          //     /////////// test 241029
+          //     GPUS[tmp_dev_id].nl_status++;
+          //     printf("When fully get, Num of NL tasks: %d\n", GPUS[tmp_dev_id].nl_status);
+
+          //     printf("el_tasks' mem_B: %zd\n", el_tasks[tmp_dev_id]->beacon.mem_B);
+          //     GPUS[tmp_dev_id].eager_launch = 0;
+          //     el_tasks[tmp_dev_id]->extra_status = 0;
+          //     tmp_bytes_to_free = tmp_extra_free_mem;
+          //   }
+          //   else{
+          //     printf("Partially get mem\n");
+          //     el_tasks[tmp_dev_id]->beacon.mem_B = el_tasks[tmp_dev_id]->beacon.mem_B - tmp_bytes_to_free;
+          //     tmp_bytes_to_free = 0;
+          //   }
+          // }
+
+          // if(comm->extra_status == 1){
+          //  GPUS[tmp_dev_id].eager_launch = 0;
+          //  comm->extra_status = 0; 
+          // }
+
+          // if(comm->beacon.app_type == 1){
+          //   // printf("Degrade number of mem intensive apps\n");
+          //   GPUS[tmp_dev_id].m_intensive--;
+          //   if((GPUS[tmp_dev_id].m_intensive == 1) && (el_tasks[tmp_dev_id]->a_type == 1)){
+          //     el_tasks[tmp_dev_id]->w_sign = 0;
+          //   }
+          // }
+
+          // // printf("Number of Learning task in GPU %d: %d\n", tmp_dev_id, GPUS[tmp_dev_id].launch_status);
+          // // printf("Number of Memory intensive apps: %d\n", GPUS[tmp_dev_id].m_intensive);
 
           //
 
@@ -1135,76 +1174,92 @@ void sched_mgb_basic(void) {
               now->tm_min, now->tm_sec, millsec);
 
           printf("gpus_in_use[%d].mem_B : %ld\n", tmp_dev_id, gpus_in_use[tmp_dev_id].mem_B);
-          printf("Helllllllllllllllllllllllllllllllllllo\n");
+          printf("Task Finished\n");
         }
-        else if(comm->beacon.changed == 1) { // eager freed
-          printf("Eager Free!!\n");
+        // else if(comm->beacon.changed == 1) { // eager freed
+        //   printf("Eager Free!!\n");
           
-          tmp_dev_id = comm->sched_notif.device_id;
-          long tmp_eager_free_mem = comm->beacon.mem_B;
+        //   tmp_dev_id = comm->sched_notif.device_id;
+        //   long tmp_eager_free_mem = comm->beacon.mem_B;
 
-          BEMPS_SCHED_LOG("pre_bemps_free() is called. Adjusting the free memory of the device\n");
-          // long tmp_bytes_to_free = comm->beacon.mem_B;
-          // gpus_in_use[tmp_dev_id].mem_B -= (long) 10082912000;
-          struct timespec specific_time;
-          struct tm *now;
-          int millsec;
-          clock_gettime( CLOCK_REALTIME, &specific_time);
-          now = localtime(&specific_time.tv_sec);
-          millsec = specific_time.tv_nsec;
+        //   BEMPS_SCHED_LOG("pre_bemps_free() is called. Adjusting the free memory of the device\n");
+        //   // long tmp_bytes_to_free = comm->beacon.mem_B;
+        //   // gpus_in_use[tmp_dev_id].mem_B -= (long) 10082912000;
+        //   struct timespec specific_time;
+        //   struct tm *now;
+        //   int millsec;
+        //   clock_gettime( CLOCK_REALTIME, &specific_time);
+        //   now = localtime(&specific_time.tv_sec);
+        //   millsec = specific_time.tv_nsec;
 
-          millsec = floor (specific_time.tv_nsec/1.0e6);
+        //   millsec = floor (specific_time.tv_nsec/1.0e6);
 
 
-          printf("Eager Free Mem: %ld, When Eager Free: [%04d/%02d/%02d] %02d:%02d:%02d msec : %d\n", tmp_eager_free_mem, 1900 + now->tm_year, 
-              now->tm_mon + 1, now->tm_mday, now->tm_hour, 
-              now->tm_min, now->tm_sec, millsec);
+        //   printf("Eager Free Mem: %ld, When Eager Free: [%04d/%02d/%02d] %02d:%02d:%02d msec : %d\n", tmp_eager_free_mem, 1900 + now->tm_year, 
+        //       now->tm_mon + 1, now->tm_mday, now->tm_hour, 
+        //       now->tm_min, now->tm_sec, millsec);
 
-          // printf("eager free: %ld\n", comm->beacon.mem_B);
-          // printf("Dev: %d\n", tmp_dev_id);
-          // printf("gpus_in_use: %ld\n", gpus_in_use[tmp_dev_id].mem_B);         
+        //   // printf("eager free: %ld\n", comm->beacon.mem_B);
+        //   // printf("Dev: %d\n", tmp_dev_id);
+        //   // printf("gpus_in_use: %ld\n", gpus_in_use[tmp_dev_id].mem_B);         
 
-          // add to get extra memory
-          if(GPUS[tmp_dev_id].eager_launch == 1){
-            if(el_tasks[tmp_dev_id]->beacon.mem_B + tmp_eager_free_mem >= el_tasks[tmp_dev_id]->beacon.actual_mem_B){
-              printf("Fully get mem by Eager Free\n");
-              long tmp_extra_free_mem = tmp_eager_free_mem - el_tasks[tmp_dev_id]->beacon.actual_mem_B + el_tasks[tmp_dev_id]->beacon.mem_B;
-              // gpus_in_use[tmp_dev_id].mem_B = gpus_in_use[tmp_dev_id].mem_B - el_tasks[tmp_dev_id]->beacon.mem_B + el_tasks[tmp_dev_id]->beacon.actual_mem_B - tmp_eager_free_mem;
-              el_tasks[tmp_dev_id]->beacon.mem_B = el_tasks[tmp_dev_id]->beacon.actual_mem_B;
-              el_tasks[tmp_dev_id]->ready = 1;
-              GPUS[tmp_dev_id].eager_launch = 0;
-              el_tasks[tmp_dev_id]->extra_status = 0;
-              tmp_eager_free_mem = tmp_extra_free_mem;
-            }
-            else{
-              printf("Partially get mem by Eager Free\n");
-              el_tasks[tmp_dev_id]->beacon.mem_B = el_tasks[tmp_dev_id]->beacon.mem_B + tmp_eager_free_mem;
-              tmp_eager_free_mem = 0;
-            }
-          }
-          //
+        //   // add to get extra memory
+        //   if(GPUS[tmp_dev_id].eager_launch == 1){
+        //     if(el_tasks[tmp_dev_id]->beacon.mem_B + tmp_eager_free_mem >= el_tasks[tmp_dev_id]->beacon.actual_mem_B){
+        //       printf("Fully get mem by Eager Free\n");
+        //       long tmp_extra_free_mem = tmp_eager_free_mem - el_tasks[tmp_dev_id]->beacon.actual_mem_B + el_tasks[tmp_dev_id]->beacon.mem_B;
+        //       // gpus_in_use[tmp_dev_id].mem_B = gpus_in_use[tmp_dev_id].mem_B - el_tasks[tmp_dev_id]->beacon.mem_B + el_tasks[tmp_dev_id]->beacon.actual_mem_B - tmp_eager_free_mem;
+        //       el_tasks[tmp_dev_id]->beacon.mem_B = el_tasks[tmp_dev_id]->beacon.actual_mem_B;
+        //       el_tasks[tmp_dev_id]->ready = 1;
+        //       GPUS[tmp_dev_id].eager_launch = 0;
+        //       el_tasks[tmp_dev_id]->extra_status = 0;
+        //       tmp_eager_free_mem = tmp_extra_free_mem;
+        //     }
+        //     else{
+        //       printf("Partially get mem by Eager Free\n");
+        //       el_tasks[tmp_dev_id]->beacon.mem_B = el_tasks[tmp_dev_id]->beacon.mem_B + tmp_eager_free_mem;
+        //       tmp_eager_free_mem = 0;
+        //     }
+        //   }
+        //   //
 
-          gpus_in_use[tmp_dev_id].mem_B -= tmp_eager_free_mem;
-          printf("gpus_in_use[%d].mem_B : %ld\n", tmp_dev_id, gpus_in_use[tmp_dev_id].mem_B);
-        }
-        else if(comm->nl_test == 1){
-          // printf("Let's go\n");
-          if(GPUS[comm->g_ID].nl_status > 0){
-            GPUS[comm->g_ID].nl_status--;
-            printf("GPU : %d, Eager Launch %d\n", comm->g_ID, GPUS[comm->g_ID].eager_launch);
-            printf("GPU : %d, number of remaining NL task %d\n", comm->g_ID, GPUS[comm->g_ID].nl_status);
-            if((GPUS[comm->g_ID].eager_launch == 1) && (GPUS[comm->g_ID].nl_status == 0)){
-              el_tasks[comm->g_ID]->ready = 1;
-              printf("Now El Task can be launched\n");
-            }
-          }
-          else{
-            if((GPUS[comm->g_ID].eager_launch == 1)){
-              el_tasks[comm->g_ID]->ready = 1;
-              printf("Now El Task can be launched\n");
-            }
-          }
-        }
+        //   gpus_in_use[tmp_dev_id].mem_B -= tmp_eager_free_mem;
+        //   printf("gpus_in_use[%d].mem_B : %ld\n", tmp_dev_id, gpus_in_use[tmp_dev_id].mem_B);
+        // }
+        // else if(comm->nl_test == 1){
+        //   // printf("Let's go\n");
+        //   if(GPUS[comm->g_ID].nl_status > 0){
+        //     GPUS[comm->g_ID].nl_status--;
+        //     printf("GPU : %d, Eager Launch %d\n", comm->g_ID, GPUS[comm->g_ID].eager_launch);
+        //     printf("GPU : %d, number of remaining NL task %d\n", comm->g_ID, GPUS[comm->g_ID].nl_status);
+        //     if((GPUS[comm->g_ID].eager_launch == 1) && (GPUS[comm->g_ID].nl_status == 0)){
+        //       el_tasks[comm->g_ID]->ready2 = 1;
+        //       printf("Now El Task can be launched\n");
+        //     }
+        //   }
+        //   else{
+        //     if((GPUS[comm->g_ID].eager_launch == 1)){
+        //       el_tasks[comm->g_ID]->ready2 = 1;
+        //       printf("Now El Task can be launched\n");
+        //     }
+        //   }
+        // }
+        // else if(comm->launch == 1){
+          
+        //   if(comm->is_this_nl == 1){
+        //     GPUS[comm->g_ID].launch_status++;
+        //     // printf("Check: %d\n", GPUS[comm->g_ID].launch_status);
+        //     if((GPUS[comm->g_ID].launch_status > 0) && (GPUS[comm->g_ID].eager_launch == 1)){
+        //       el_tasks[comm->g_ID]->ready = 0;
+        //     }
+        //   }
+        // }
+        // // else if(comm->chk_el_run == 1){
+        // //   // printf("Let's go\n");
+        // //   if(GPUS[comm->g_ID].mem_B - gpus_in_use[comm->g_ID] > comm->beacon.mem_B){
+        // //       el_tasks[comm->g_ID]->ready = 1;
+        // //   }
+        // // }
         else { // task를 스케줄 해야되는 상태 (아직 디바이스 여유 메모리와 비교하기 전)
           stats.num_beacons++;
           boomers.push_back(comm);
@@ -1223,7 +1278,8 @@ void sched_mgb_basic(void) {
 
     // 여기서 job 다 들어올때까지 sync
 
-    if(job_cnt == 2){
+    // if(job_cnt == 64){
+    if(job_cnt >= 8){
     // if(1){
       // Second loop: Walk the boomers. This time handle regular beacons, and
       // attempt to assign them to a device. The boomers are sorted by memory
@@ -1263,11 +1319,11 @@ void sched_mgb_basic(void) {
           // if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
           //      GPUS[tmp_dev_id].mem_B) && (bemps_shm_p->gen->test_status != 1)) {
 
-          if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
-              GPUS[tmp_dev_id].mem_B) && (GPUS[tmp_dev_id].eager_launch != 1)) {
-
           // if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
-          //     GPUS[tmp_dev_id].mem_B)) {
+          //     GPUS[tmp_dev_id].mem_B) && (GPUS[tmp_dev_id].eager_launch != 1)) {
+
+          if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
+              GPUS[tmp_dev_id].mem_B)) {
 
           // if (((gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) <
           //      GPUS[tmp_dev_id].mem_B)) {
@@ -1279,7 +1335,7 @@ void sched_mgb_basic(void) {
 
                 // GPUS[target_dev_id].nl_status++;
                 
-                printf("Test NL\n");
+                // printf("Test NL\n");
                 
                 // normal_launched = 1; // 정상 launch
 
@@ -1352,8 +1408,65 @@ void sched_mgb_basic(void) {
         long curr_min_mem_B = LONG_MAX;
 
         if (!assigned) {
-          // Eager Launch motivation
-          // if(motiv_cnt == 1){
+          // // Eager Launch motivation
+          // // if(motiv_cnt == 1){
+          // //   struct timespec specific_time;
+          // //   struct tm *now;
+          // //   int millsec;
+          // //   clock_gettime( CLOCK_REALTIME, &specific_time);
+          // //   now = localtime(&specific_time.tv_sec);
+          // //   millsec = specific_time.tv_nsec;
+
+          // //   millsec = floor (specific_time.tv_nsec/1.0e6);
+
+
+          // //   printf("When pending: [%04d/%02d/%02d] %02d:%02d:%02d msec : %d\n", 1900 + now->tm_year, 
+          // //       now->tm_mon + 1, now->tm_mday, now->tm_hour, 
+          // //       now->tm_min, now->tm_sec, millsec);
+
+          // //   for(int i = 0; i < 4; i++){
+          // //       printf("Current GPU Device %d mem_B: %ld\n", i, gpus_in_use[i].mem_B);
+          // //   }
+          // //   printf("memB1: %ld\n", comm->beacon.mem_B);
+          // //   motiv_cnt = 0;
+          // // }
+          
+          // for(tmp_dev_id = 0; tmp_dev_id < NUM_GPUS; tmp_dev_id++) {
+          //   // Memory contention 완화
+          //   if((GPUS[tmp_dev_id].eager_launch != 1)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
+          //   // if((GPUS[tmp_dev_id].eager_launch != 1) && (((float)(GPUS[tmp_dev_id].mem_B - gpus_in_use[tmp_dev_id].mem_B) / (float)comm->beacon.mem_B) > 0.91)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
+          //   // if((GPUS[tmp_dev_id].eager_launch != 1) && ((float)(gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) < (float)(GPUS[tmp_dev_id].mem_B) * 1.5 )){ // 여기에 메모리 비율을 비교하는 것 까지 추가
+          //   // if((GPUS[tmp_dev_id].eager_launch != 1)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
+          //     if (gpus_in_use[tmp_dev_id].mem_B < curr_min_mem_B){
+          //       curr_min_mem_B = gpus_in_use[tmp_dev_id].mem_B;
+          //       curr_min_warps = gpus_in_use[tmp_dev_id].warps;
+          //       target_dev_id = tmp_dev_id;
+          //       assigned = 1;
+          //     }
+          //     else if(gpus_in_use[tmp_dev_id].mem_B == curr_min_mem_B){
+          //       if(gpus_in_use[tmp_dev_id].warps < curr_min_warps){
+          //         curr_min_warps = gpus_in_use[tmp_dev_id].warps;
+          //         curr_min_mem_B = gpus_in_use[tmp_dev_id].mem_B;
+          //         target_dev_id = tmp_dev_id;
+          //         assigned = 1;
+          //       }
+          //     }
+          //   } 
+          // }
+          
+          // if(assigned){
+          //   // while(1){
+          //   //   if(GPUS[target_dev_id].nl_status == 0){
+          //   //     break;
+          //   //   }
+          //   // }
+          //   for(int i = 0; i < 4; i++){
+          //     printf("Current GPU Device %d warps: %ld\n", i, gpus_in_use[i].warps);
+          //     printf("Current GPU Device %d mem_B: %ld\n", i, gpus_in_use[i].mem_B);
+          //   }
+          //   printf("Dev: %d\n", target_dev_id);
+          //   printf("Percentage: %f\n", ((float)(GPUS[target_dev_id].mem_B - gpus_in_use[target_dev_id].mem_B) / (float)comm->beacon.mem_B));
+          //   printf("memB1: %ld\n", comm->beacon.mem_B);
           //   struct timespec specific_time;
           //   struct tm *now;
           //   int millsec;
@@ -1364,152 +1477,109 @@ void sched_mgb_basic(void) {
           //   millsec = floor (specific_time.tv_nsec/1.0e6);
 
 
-          //   printf("When pending: [%04d/%02d/%02d] %02d:%02d:%02d msec : %d\n", 1900 + now->tm_year, 
+          //   printf("Eager launched, when assigned: [%04d/%02d/%02d] %02d:%02d:%02d msec : %d\n", 1900 + now->tm_year, 
           //       now->tm_mon + 1, now->tm_mday, now->tm_hour, 
           //       now->tm_min, now->tm_sec, millsec);
 
-          //   for(int i = 0; i < 4; i++){
-          //       printf("Current GPU Device %d mem_B: %ld\n", i, gpus_in_use[i].mem_B);
+          //   comm->beacon.actual_mem_B = comm->beacon.mem_B; // 기존의 메모리 사용량 저장
+          //   // long quo = (ceil((GPUS[target_dev_id].mem_B - gpus_in_use[target_dev_id].mem_B) / 2097152)); // 200MB 정도의 여유 공간
+
+          //   // if(quo > 100){
+          //   //   quo = quo - 100;
+          //   // }
+            
+          //   // comm->beacon.mem_B = quo * 2097152; // 스케줄러가 할당해준 메모리    
+          //   comm->beacon.mem_B = GPUS[target_dev_id].mem_B - gpus_in_use[target_dev_id].mem_B; // 스케줄러가 할당해준 메모리    
+          //   bemps_shm_p->gen->test_status = 1; // 여분 메모리로 돌아가는 task 존재 표시
+                
+          //   comm->extra_status = 1;
+          //   GPUS[target_dev_id].eager_launch = 1;
+
+          //   if(GPUS[target_dev_id].launch_status <= 0){
+          //     comm->ready = 1;
           //   }
-          //   printf("memB1: %ld\n", comm->beacon.mem_B);
-          //   motiv_cnt = 0;
+          //   else{
+          //     comm->ready = 0;
+          //   }
+
+          //   if(GPUS[target_dev_id].m_intensive > 0){
+          //     if(comm->a_type == 1){
+          //       // printf("Intensive up\n");
+          //       comm->w_sign = 1;
+          //       GPUS[target_dev_id].m_intensive++;
+          //     }
+          //   }
+          //   else{
+          //     if(comm->a_type == 1){
+          //       // printf("Intensive up\n");
+          //       GPUS[target_dev_id].m_intensive++;
+          //     }
+          //   }
+
+          //   el_tasks[target_dev_id] = comm;
+
+          //   long tmp_bytes_to_add = comm->beacon.mem_B;
+          //   long tmp_warps_to_add = comm->beacon.warps;
+          //   BEMPS_SCHED_LOG("Adding " << tmp_bytes_to_add << " bytes "
+          //                   << "to device " << target_dev_id << "\n");
+          //   BEMPS_SCHED_LOG("Adding " << tmp_warps_to_add << " warps "
+          //                   << "to device " << target_dev_id << "\n");
+          //   gpus_in_use[target_dev_id].mem_B += tmp_bytes_to_add;
+          //   gpus_in_use[target_dev_id].warps += tmp_warps_to_add;
+          //   BEMPS_SCHED_LOG("sem_post for pid(" << comm->pid << ") "
+          //                                           << "on device(" << target_dev_id
+          //                                           << ")\n");
+          //   // FIXME Is this SCHEDULER_READ state helping at all?
+          //   comm->state = BEMPS_BEACON_STATE_SCHEDULER_READ_E;
+          //   comm->sched_notif.device_id = target_dev_id;
+          //   comm->state = BEMPS_BEACON_STATE_SCHEDULED_E;
+
+          //   // if(GPUS[target_dev_id].nl_status == 0){
+          //   //   comm->ready = 1;
+          //   // }
+
+          //   boomers.pop_front();
+
+          //   sem_post(&comm->sched_notif.sem);
+          //   ++*jobs_running_on_gpu;
+          //   --*jobs_waiting_on_gpu;
           // }
-          
-          for(tmp_dev_id = 0; tmp_dev_id < NUM_GPUS; tmp_dev_id++) {
-            // printf("Current GPU Device %d warps: %ld\n", tmp_dev_id, gpus_in_use[tmp_dev_id].warps);
-            // if((GPUS[tmp_dev_id].eager_launch != 1)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
-            // if((GPUS[tmp_dev_id].eager_launch != 1) && ((((float)gpus_in_use[tmp_dev_id].mem_B + (float)comm->beacon.mem_B) < (float)MAX_OVERSUB))){ // 여기에 메모리 비율을 비교하는 것 까지 추가
-            // if((GPUS[tmp_dev_id].eager_launch != 1) && (((float)(GPUS[tmp_dev_id].mem_B - gpus_in_use[tmp_dev_id].mem_B) / (float)comm->beacon.mem_B) > 0.91)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
-            
-            // Computing contention 완화
-            // if((GPUS[tmp_dev_id].eager_launch != 1)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
-            //   if (gpus_in_use[tmp_dev_id].warps < curr_min_warps){
-            //     curr_min_warps = gpus_in_use[tmp_dev_id].warps;
-            //     target_dev_id = tmp_dev_id;
-            //     assigned = 1;
-                
-                
-            //   }
-            // }
 
-            // Memory contention 완화
-            if((GPUS[tmp_dev_id].eager_launch != 1)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
-            // if((GPUS[tmp_dev_id].eager_launch != 1) && (((float)(GPUS[tmp_dev_id].mem_B - gpus_in_use[tmp_dev_id].mem_B) / (float)comm->beacon.mem_B) > 0.91)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
-            // if((GPUS[tmp_dev_id].eager_launch != 1) && ((float)(gpus_in_use[tmp_dev_id].mem_B + comm->beacon.mem_B) < (float)(GPUS[tmp_dev_id].mem_B) * 1.5 )){ // 여기에 메모리 비율을 비교하는 것 까지 추가
-            // if((GPUS[tmp_dev_id].eager_launch != 1)){ // 여기에 메모리 비율을 비교하는 것 까지 추가
-              if (gpus_in_use[tmp_dev_id].mem_B < curr_min_mem_B){
-                curr_min_mem_B = gpus_in_use[tmp_dev_id].mem_B;
-                curr_min_warps = gpus_in_use[tmp_dev_id].warps;
-                target_dev_id = tmp_dev_id;
-                assigned = 1;
-              }
-              else if(gpus_in_use[tmp_dev_id].mem_B == curr_min_mem_B){
-                if(gpus_in_use[tmp_dev_id].warps < curr_min_warps){
-                  curr_min_warps = gpus_in_use[tmp_dev_id].warps;
-                  curr_min_mem_B = gpus_in_use[tmp_dev_id].mem_B;
-                  target_dev_id = tmp_dev_id;
-                  assigned = 1;
-                }
-              }
-            } 
-          }
-          
-          if(assigned){
-            // while(1){
-            //   if(GPUS[target_dev_id].nl_status == 0){
-            //     break;
-            //   }
-            // }
-            for(int i = 0; i < 4; i++){
-              printf("Current GPU Device %d warps: %ld\n", i, gpus_in_use[i].warps);
-              printf("Current GPU Device %d mem_B: %ld\n", i, gpus_in_use[i].mem_B);
-            }
-            printf("Dev: %d\n", target_dev_id);
-            printf("Percentage: %f\n", ((float)(GPUS[target_dev_id].mem_B - gpus_in_use[target_dev_id].mem_B) / (float)comm->beacon.mem_B));
-            printf("memB1: %ld\n", comm->beacon.mem_B);
-            struct timespec specific_time;
-            struct tm *now;
-            int millsec;
-            clock_gettime( CLOCK_REALTIME, &specific_time);
-            now = localtime(&specific_time.tv_sec);
-            millsec = specific_time.tv_nsec;
+          // // else{
+          // //   // comm->age++;
+          // // }
+          // ////
+          // // FIXME: need to add stats, and possibly a way to reserve a
+          // // GPU to prevent starving.
 
-            millsec = floor (specific_time.tv_nsec/1.0e6);
+          // // just for test (Jeongjae)
+          // //comm->age++;
+          // //boomers.push_back(comm);
+          // //
 
-
-            printf("Eager launched, when assigned: [%04d/%02d/%02d] %02d:%02d:%02d msec : %d\n", 1900 + now->tm_year, 
-                now->tm_mon + 1, now->tm_mday, now->tm_hour, 
-                now->tm_min, now->tm_sec, millsec);
-
-            comm->beacon.actual_mem_B = comm->beacon.mem_B; // 기존의 메모리 사용량 저장
-            long quo = (ceil((GPUS[target_dev_id].mem_B - gpus_in_use[target_dev_id].mem_B) / 2097152)); // 200MB 정도의 여유 공간
-
-            if(quo > 100){
-              quo = quo - 100;
-            }
-            
-            comm->beacon.mem_B = quo * 2097152; // 스케줄러가 할당해준 메모리    
-            bemps_shm_p->gen->test_status = 1; // 여분 메모리로 돌아가는 task 존재 표시
-                
-            comm->extra_status = 1;
-            GPUS[target_dev_id].eager_launch = 1;
-
-            el_tasks[target_dev_id] = comm;
-
-            long tmp_bytes_to_add = comm->beacon.mem_B;
-            long tmp_warps_to_add = comm->beacon.warps;
-            BEMPS_SCHED_LOG("Adding " << tmp_bytes_to_add << " bytes "
-                            << "to device " << target_dev_id << "\n");
-            BEMPS_SCHED_LOG("Adding " << tmp_warps_to_add << " warps "
-                            << "to device " << target_dev_id << "\n");
-            gpus_in_use[target_dev_id].mem_B += tmp_bytes_to_add;
-            gpus_in_use[target_dev_id].warps += tmp_warps_to_add;
-            BEMPS_SCHED_LOG("sem_post for pid(" << comm->pid << ") "
-                                                    << "on device(" << target_dev_id
-                                                    << ")\n");
-            // FIXME Is this SCHEDULER_READ state helping at all?
-            comm->state = BEMPS_BEACON_STATE_SCHEDULER_READ_E;
-            comm->sched_notif.device_id = target_dev_id;
-            comm->state = BEMPS_BEACON_STATE_SCHEDULED_E;
-
-            if(GPUS[target_dev_id].nl_status == 0){
-              comm->ready = 1;
-            }
-
-            boomers.pop_front();
-
-            sem_post(&comm->sched_notif.sem);
-            ++*jobs_running_on_gpu;
-            --*jobs_waiting_on_gpu;
-          }
-
-          // else{
-          //   // comm->age++;
-          // }
-          ////
-          // FIXME: need to add stats, and possibly a way to reserve a
-          // GPU to prevent starving.
-
-          // just for test (Jeongjae)
-          //comm->age++;
-          //boomers.push_back(comm);
-          //
-
-          // don't adjust jobs-waiting-on-gpu. it was incremented when job first
-          // went into the boomers list
-        } else{
+          // // don't adjust jobs-waiting-on-gpu. it was incremented when job first
+          // // went into the boomers list
+        } 
+        else{
           printf("Dev: %d\n", target_dev_id);
           printf("memB1: %ld\n", comm->beacon.mem_B);
 
           //
 
           GPUS[target_dev_id].nl_status++;
-          printf("Num of NL tasks: %d\n", GPUS[target_dev_id].nl_status);
+          // printf("Num of NL tasks: %d\n", GPUS[target_dev_id].nl_status);
+
+          if(comm->a_type == 1){
+            // printf("Intensive up\n");
+            GPUS[target_dev_id].m_intensive++;
+          }
 
           //
 
           // printf("Assigned!\n"); // just for check
           
+          comm->beacon.actual_mem_B = comm->beacon.mem_B; // 기존의 메모리 사용량 저장
+
           struct timespec specific_time;
           struct tm *now;
           int millsec;
